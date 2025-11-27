@@ -7,6 +7,7 @@
     enable = true;
     port = 8080;
     openFirewall = true;
+    instancePath = "${inputs.lucee-example}/lucee-instance";
 
     javaOpts = [
       "-Xmx1024m"
