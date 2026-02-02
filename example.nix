@@ -1,7 +1,8 @@
 { lib, config, pkgs, ... }:
 let
   lucee = pkgs.stdenv.mkDerivation {
-    name = "lucee-7.0.1.100";
+    version = "7.0.1.100";
+    name = "lucee-${lucee.version}";
     src = pkgs.fetchurl {
       url = "https://cdn.lucee.org/${lucee.name}.jar";
       sha256 = "0s56sd4m71ryqkn6szd4xd24rhmmv5zsl3frvrs6f6s8bf8invi0";
@@ -20,14 +21,14 @@ let
     sha256 = "sha256-tzR30emegBC27E4XImgQrOBTYOGacaXmdvCZrvjLhsg=";
   };
 
-  # webapp must be in directory named webapps
+  # webapp must be in directory named webapps/ROOT
   webapp = pkgs.runCommand "lucee-webapp-root" {} ''
     mkdir -p $out/webapps
     ln -s ${lucee-dockerfiles}/www $out/webapps/ROOT
   '';
 
   tomcat-lucee = pkgs.tomcat11.overrideAttrs (oldAttrs: {
-    name = "apache-tomcat-lucee-${oldAttrs.version}";
+    name = "${oldAttrs.pname}-${oldAttrs.version}-lucee-${lucee.version}";
     postFixup = (oldAttrs.postFixup or "") + ''
       cp -f ${lucee-dockerfiles}/config/tomcat/11.0/* $out/conf/
 
