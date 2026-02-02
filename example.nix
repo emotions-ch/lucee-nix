@@ -39,6 +39,7 @@ in
     enable = true;
     package = tomcat-lucee;
     jdk = pkgs.openjdk25;
+    purifyOnStart = true;
 
     serverXml = builtins.readFile "${tomcat-lucee}/conf/server.xml";
 
@@ -56,7 +57,7 @@ in
         after = [ "lucee-setup.service" ];
         requires = [ "lucee-setup.service" ];
         preStart = lib.mkAfter ''
-          ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}/lucee
+          ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
         '';
       };
 
