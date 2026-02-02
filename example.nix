@@ -20,6 +20,12 @@ let
     sha256 = "sha256-tzR30emegBC27E4XImgQrOBTYOGacaXmdvCZrvjLhsg=";
   };
 
+  # webapp must be in directory named webapps
+  webapp = pkgs.runCommand "lucee-webapp-root" {} ''
+    mkdir -p $out/webapps
+    ln -s ${lucee-dockerfiles}/www $out/webapps/ROOT
+  '';
+
   tomcat-lucee = pkgs.tomcat11.overrideAttrs (oldAttrs: {
     name = "apache-tomcat-lucee-${oldAttrs.version}";
     postFixup = (oldAttrs.postFixup or "") + ''
@@ -43,12 +49,7 @@ in
 
     serverXml = builtins.readFile "${tomcat-lucee}/conf/server.xml";
 
-    webapps = ["${pkgs.fetchFromGitHub {
-      owner = "lucee";
-      repo = "lucee-installer";
-      rev = "da57a8ec6e2993ed873445dde2ce4ea8dc2c4bb8";
-      sha256 = "sha256-KqdDwzSy1r9jiIMVRJHyLaQgsdUk75TIOI9LsSISOII=";
-    }}/lucee/tomcat9/tomcat-lucee-conf"];
+    webapps = [ webapp ];
   };
 
   systemd = {
