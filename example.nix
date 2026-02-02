@@ -57,7 +57,7 @@ in
       repo = "lucee-installer";
       rev = "da57a8ec6e2993ed873445dde2ce4ea8dc2c4bb8";
       sha256 = "sha256-KqdDwzSy1r9jiIMVRJHyLaQgsdUk75TIOI9LsSISOII=";
-    }}/lucee/tomcat9/tomcat-lucee-conf/webapps/ROOT"];
+    }}/lucee/tomcat9/tomcat-lucee-conf"];
   };
 }
 
