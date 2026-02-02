@@ -1,9 +1,9 @@
 { config, pkgs, ... }:
 let
   lucee = pkgs.stdenv.mkDerivation {
-    name = "lucee-7.0.1.100.jar";
+    name = "lucee-7.0.1.100";
     src = pkgs.fetchurl {
-      url = "https://cdn.lucee.org/${lucee.name}";
+      url = "https://cdn.lucee.org/${lucee.name}.jar";
       sha256 = "0s56sd4m71ryqkn6szd4xd24rhmmv5zsl3frvrs6f6s8bf8invi0";
     };
     dontUnpack = true;
@@ -74,22 +74,22 @@ in
 {
   services.tomcat = {
     enable = true;
-    package = tomcat-lucee;
+    package = pkgs.tomcat11;
     jdk = pkgs.openjdk25;
     commonLibs = [ "${lucee}/lucee.jar" ];
 
     # serverXml = builtins.readFile serverXml;
     extraConfigFiles = [
-      "${contextXml}/context.xml"
-      "${webXml}/web.xml"
+      # "${contextXml}/context.xml"
+      # "${webXml}/web.xml"
     ];
 
-    webapps = ["${pkgs.fetchFromGitHub {
-      owner = "lucee";
-      repo = "lucee-installer";
-      rev = "da57a8ec6e2993ed873445dde2ce4ea8dc2c4bb8";
-      sha256 = "sha256-KqdDwzSy1r9jiIMVRJHyLaQgsdUk75TIOI9LsSISOII=";
-    }}/lucee/tomcat9/tomcat-lucee-conf"];
+    # webapps = ["${pkgs.fetchFromGitHub {
+    #   owner = "lucee";
+    #   repo = "lucee-installer";
+    #   rev = "da57a8ec6e2993ed873445dde2ce4ea8dc2c4bb8";
+    #   sha256 = "sha256-KqdDwzSy1r9jiIMVRJHyLaQgsdUk75TIOI9LsSISOII=";
+    # }}/lucee/tomcat9/tomcat-lucee-conf"];
   };
 }
 
