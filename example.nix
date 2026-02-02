@@ -28,29 +28,40 @@ let
     sha256 = "1kxg7yymi7gyzf3pa6yn521d86zmgn9mivy2skpn3hbfaa0qar9m";
   };
 
-  catalinaProperties = pkgs.fetchurl {
-    url = "https://github.com/lucee/lucee-installer/raw/860059147b84686b2d3db681cc30f216bc17c4f7/lucee/tomcat10/conf/catalina.properties"; # catalina.properties from lucee7 installer
-    sha256 = "1i9vbgg39gxzgn4zw3gbm5apfqchksvqssna1dg2jbd253xydllx";
-  };
+  catalinaProperties = pkgs.stdenv.mkDerivation {
+    # this is a derivation because we are overriding the default catalina.properties which does get modified in the service config so we need to apply the same modifications to ourt
+    # https://github.com/NixOS/nixpkgs/blob/ed142ab1b3a092c4d149245d0c4126a5d7ea00b0/nixos/modules/services/web-servers/tomcat.nix#L237C1-L241C87 
+    name = "catalinaProperties-service-patch";
+    src = pkgs.fetchurl {
+      url = "https://github.com/lucee/lucee-installer/raw/860059147b84686b2d3db681cc30f216bc17c4f7/lucee/tomcat10/conf/catalina.properties"; # catalina.properties from lucee7 installer
+      sha256 = "1i9vbgg39gxzgn4zw3gbm5apfqchksvqssna1dg2jbd253xydllx";
+    };
 
-  tomcat-lucee = pkgs.tomcat11.overrideAttrs (oldAttrs: {
-    postInstall = (oldAttrs.postInstall or "") + ''
-      # config files for lucee
-      cp -f ${serverXml} $out/conf/server.xml
-      cp -f ${contextXml} $out/conf/context.xml
-      cp -f ${webXml} $out/conf/web.xml
-      cp -f ${catalinaProperties} $out/conf/catalina.properties
+    dontUnpack = true;
+    buildInputs = [ pkgs.gnused ];
 
-      # lucee
-      cp ${lucee}/lucee.jar $out/lib/
+    installPhase = ''
+      # Create a modified catalina.properties file
+      # Change all references from CATALINA_HOME to CATALINA_BASE and add support for shared libraries
+      sed -e 's|''${catalina.home}|''${catalina.base}|g' \
+        -e 's|shared.loader=|shared.loader=''${catalina.base}/shared/lib/*.jar|' \
+        $src > $out
     '';
-  });
+  };
 in
 {
   services.tomcat = {
     enable = true;
-    package = tomcat-lucee;
+    package = pkgs.tomcat11;
     jdk = pkgs.openjdk25;
+    commonLibs = [ "${lucee}/lucee.jar" ];
+
+    serverXml = builtins.readFile serverXml;
+    extraConfigFiles = [
+      contextXml
+      webXml
+      catalinaProperties
+    ];
 
     webapps = ["${pkgs.fetchFromGitHub {
       owner = "lucee";
