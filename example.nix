@@ -1,4 +1,4 @@
-{  pkgs, ... }:
+{ config, pkgs, ... }:
 let
   lucee = pkgs.stdenv.mkDerivation {
     name = "lucee-7.0.1.100.jar";
@@ -71,6 +71,26 @@ let
   };
 in
 {
+  systemd.services.prepare-catalina-properties = {
+    description = "Prepare custom Tomcat config";
+    wantedBy = [ "tomcat.service" ];
+    before = [ "tomcat.service" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      User = config.services.tomcat.user;
+    };
+
+    script = ''
+      CONF_DIR="${config.services.tomcat.baseDir}/conf"
+      mkdir -p "$CONF_DIR"
+      chown ${config.services.tomcat.user}:${config.services.tomcat.group} "$CONF_DIR"
+
+      # Copy custom file from the Nix store into the config directory so it is writable.
+      cp ${catalinaProperties}/catalina.properties "$CONF_DIR/catalina.properties"
+    '';
+  };
+
   services.tomcat = {
     enable = true;
     package = pkgs.tomcat11;
@@ -81,7 +101,6 @@ in
     extraConfigFiles = [
       "${contextXml}/context.xml"
       "${webXml}/web.xml"
-      "${catalinaProperties}/catalina.properties"
     ];
 
     webapps = ["${pkgs.fetchFromGitHub {
