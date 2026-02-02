@@ -39,6 +39,8 @@ in
     package = tomcat-lucee;
     jdk = pkgs.openjdk25;
 
+    serverXml = builtins.readFile "${tomcat-lucee}/conf/server.xml";
+
     webapps = ["${pkgs.fetchFromGitHub {
       owner = "lucee";
       repo = "lucee-installer";
