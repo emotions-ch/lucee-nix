@@ -62,38 +62,21 @@ let
 
     installPhase = ''
       mkdir -p $out
-      # Create a modified catalina.properties file
-      # Change all references from CATALINA_HOME to CATALINA_BASE and add support for shared libraries
-      sed -e 's|''${catalina.home}|''${catalina.base}|g' \
-        -e 's|shared.loader=|shared.loader=''${catalina.base}/shared/lib/*.jar|' \
-        $src > $out/catalina.properties
+      cp $src $out/catalina.properties
     '';
   };
+
+  tomcat-lucee = pkgs.tomcat11.overrideAttrs (oldAttrs: {
+    postInstall = (oldAttrs.postInstall or "") + ''
+      # config files for lucee which need to be writable by tomcat
+      cp -f ${catalinaProperties}/catalina.properties $out/conf/catalina.properties
+    '';
+  });
 in
 {
-  systemd.services.prepare-catalina-properties = {
-    description = "Prepare custom Tomcat config";
-    wantedBy = [ "tomcat.service" ];
-    before = [ "tomcat.service" ];
-
-    serviceConfig = {
-      Type = "oneshot";
-      User = config.services.tomcat.user;
-    };
-
-    script = ''
-      CONF_DIR="${config.services.tomcat.baseDir}/conf"
-      mkdir -p "$CONF_DIR"
-      chown ${config.services.tomcat.user}:${config.services.tomcat.group} "$CONF_DIR"
-
-      # Copy custom file from the Nix store into the config directory so it is writable.
-      cp ${catalinaProperties}/catalina.properties "$CONF_DIR/catalina.properties"
-    '';
-  };
-
   services.tomcat = {
     enable = true;
-    package = pkgs.tomcat11;
+    package = tomcat-lucee;
     jdk = pkgs.openjdk25;
     commonLibs = [ "${lucee}/lucee.jar" ];
 
