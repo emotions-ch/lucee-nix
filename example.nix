@@ -33,7 +33,7 @@ let
 
       # Replace hardcoded /var/www/ with Tomcat's webapps dir
       substituteInPlace $out/conf/server.xml \
-        --replace "/var/www/" "${config.services.tomcat.baseDir}/webapps/"
+        --replace "/var/www/" "${config.services.tomcat.baseDir}/webapps/ROOT/"
 
       mkdir -p $out/lucee
       ln -s ${lucee}/lucee.jar $out/lucee/lucee.jar
