@@ -30,7 +30,7 @@ let
         --replace "/var/www/" "${config.services.tomcat.baseDir}/webapps/"
 
       mkdir -p $out/lucee
-      cp ${lucee}/lucee.jar $out/lucee/
+      ln -s ${lucee}/lucee.jar $out/lucee/lucee.jar
     '';
   });
 in
