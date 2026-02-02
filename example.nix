@@ -49,8 +49,6 @@ let
   };
 
   catalinaProperties = pkgs.stdenv.mkDerivation {
-    # this is a derivation because we are overriding the default catalina.properties which does get modified in the service config so we need to apply the same modifications to ourt
-    # https://github.com/NixOS/nixpkgs/blob/ed142ab1b3a092c4d149245d0c4126a5d7ea00b0/nixos/modules/services/web-servers/tomcat.nix#L237C1-L241C87 
     name = "lucee-catalinaProperties-service-patch";
     src = pkgs.fetchurl {
       url = "https://github.com/lucee/lucee-installer/raw/860059147b84686b2d3db681cc30f216bc17c4f7/lucee/tomcat10/conf/catalina.properties"; # catalina.properties from lucee7 installer
@@ -80,7 +78,7 @@ in
     jdk = pkgs.openjdk25;
     commonLibs = [ "${lucee}/lucee.jar" ];
 
-    serverXml = builtins.readFile serverXml;
+    # serverXml = builtins.readFile serverXml;
     extraConfigFiles = [
       "${contextXml}/context.xml"
       "${webXml}/web.xml"
