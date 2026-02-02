@@ -22,7 +22,7 @@ let
 
   tomcat-lucee = pkgs.tomcat11.overrideAttrs (oldAttrs: {
     name = "apache-tomcat-lucee-${oldAttrs.version}";
-    postInstall = (oldAttrs.postInstall or "") + ''
+    postFixup = (oldAttrs.postFixup or "") + ''
       cp -f ${lucee-dockerfiles}/config/tomcat/11.0/* $out/conf/
 
       # Replace hardcoded /var/www/ with Tomcat's webapps dir
