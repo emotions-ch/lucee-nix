@@ -9,7 +9,7 @@ in
         after = [ "lucee-setup.service" ];
         requires = [ "lucee-setup.service" ];
         preStart = lib.mkAfter ''
-          ${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}
+          ${lib.optionalString (extensions != {}) "${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}"}
           ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
         '';
 
