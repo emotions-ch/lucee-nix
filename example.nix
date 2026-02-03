@@ -46,6 +46,7 @@ in
     package = tomcat-lucee;
     jdk = pkgs.openjdk25;
     purifyOnStart = true;
+    port = 8888;
 
     serverXml = builtins.readFile "${tomcat-lucee}/conf/server.xml";
 
