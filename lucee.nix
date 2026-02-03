@@ -12,9 +12,13 @@ let
     name,
     description ? "Lucee Server Jar",
     version,
-    sha256 ? lib.fakeHash
+    sha256 ? lib.fakeHash,
+    tomcatPackage ? pkgs.tomcat11
   }: pkgs.stdenv.mkDerivation {
     inherit version name description;
+    passthru = {
+      inherit tomcatPackage;
+    };
     src = pkgs.fetchurl {
       url = "https://cdn.lucee.org/${name}-${version}.jar";
       inherit sha256;
@@ -26,12 +30,18 @@ let
     '';
   };
 
+  # Helper functions to create Lucee versions with specific Tomcat versions
+  mkLuceeWithTomcat9 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat9; });
+  mkLuceeWithTomcat10 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat10; });
+  mkLuceeWithTomcat11 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat11; });
+
   jar = {
     lucee7-zero = mkLuceeVersion {
       name = "lucee-zero";
       description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
       version = "7.0.1.100";
       sha256 = "05xzrvjan5vpd4jzq54xp0nhiiwnk6ixn6xs45f4v2wscvkapvzd";
+      # Uses default Tomcat 11
     };
   };
 
@@ -41,10 +51,15 @@ let
     ln -s ${lucee-dockerfiles}/www $out/webapps/ROOT
   '';
 
-  mkTomcatLucee = { config, luceeJar }: pkgs.tomcat11.overrideAttrs (oldAttrs: {
-    name = "${oldAttrs.pname}-${oldAttrs.version}-lucee-${luceeJar.version}";
-    postFixup = (oldAttrs.postFixup or "") + ''
-      cp -f ${lucee-dockerfiles}/config/tomcat/11.0/* $out/conf/
+  mkTomcatLucee = { config, luceeJar, tomcatPackage ? luceeJar.tomcatPackage }: 
+    let
+      # Extract major version from Tomcat package version (e.g., "11.0.2" -> "11.0")
+      tomcatMajorVersion = lib.concatStringsSep "." (lib.take 2 (lib.splitString "." tomcatPackage.version));
+    in
+    tomcatPackage.overrideAttrs (oldAttrs: {
+      name = "${oldAttrs.pname}-${oldAttrs.version}-lucee-${luceeJar.version}";
+      postFixup = (oldAttrs.postFixup or "") + ''
+        cp -f ${lucee-dockerfiles}/config/tomcat/${tomcatMajorVersion}/* $out/conf/
 
       # Replace hardcoded /var/www/ with Tomcat's webapps dir
       substituteInPlace $out/conf/server.xml \
@@ -59,4 +74,5 @@ let
 in
 {
   inherit mkLuceeVersion jar examplePage mkTomcatLucee lucee-dockerfiles;
+  inherit mkLuceeWithTomcat9 mkLuceeWithTomcat10 mkLuceeWithTomcat11;
 }
