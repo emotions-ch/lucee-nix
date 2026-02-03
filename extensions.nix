@@ -75,7 +75,6 @@ in
       fi
     '') extensions)}
 
-    echo "Extension deployment completed. Files in $DEPLOY_DIR:"
-    ${pkgs.coreutils}/bin/ls -la "$DEPLOY_DIR/"
+    ${pkgs.coreutils}/bin/ls -l "$DEPLOY_DIR/"
   '';
 }
