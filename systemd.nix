@@ -6,10 +6,10 @@ in
   systemd = {
     services = {
       tomcat = {
-        after = [ "lucee-setup.service" "lucee-extension-deploy.service" ];
-        requires = [ "lucee-setup.service" "lucee-extension-deploy.service" ];
-        bindsTo = [ "lucee-extension-deploy.service" ];
+        after = [ "lucee-setup.service" ];
+        requires = [ "lucee-setup.service" ];
         preStart = lib.mkAfter ''
+          ${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}
           ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
         '';
 
@@ -35,22 +35,6 @@ in
             ${pkgs.coreutils}/bin/mkdir -p ${lucee-dir}
             ${pkgs.coreutils}/bin/chmod 0755 ${lucee-dir}
             ${pkgs.coreutils}/bin/chown -R ${config.services.tomcat.user}:${config.services.tomcat.group} ${lucee-dir}
-          '';
-          RemainAfterExit = true;
-        };
-      };
-
-      "lucee-extension-deploy" = {
-        description = "Deploy Lucee extensions dynamically";
-        wantedBy = [ "multi-user.target" ];
-        after = [ "lucee-setup.service" ];
-        before = [ "tomcat.service" ];
-        unitConfig.RequiresMountsFor = [ "${lucee-dir}" ];
-
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = ''
-            ${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}
           '';
           RemainAfterExit = true;
         };
