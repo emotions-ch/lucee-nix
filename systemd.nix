@@ -8,6 +8,7 @@ in
       tomcat = {
         after = [ "lucee-setup.service" "lucee-extension-deploy.service" ];
         requires = [ "lucee-setup.service" "lucee-extension-deploy.service" ];
+        bindsTo = [ "lucee-extension-deploy.service" ];
         preStart = lib.mkAfter ''
           ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
         '';
@@ -16,7 +17,7 @@ in
             ${pkgs.coreutils}/bin/rm -rf ${lucee-dir}/*
             ${pkgs.coreutils}/bin/find ${lucee-dir} -mindepth 1 -delete 2>/dev/null || true
 
-            ${pkgs.coreutils}/bin/mkdir -p ${lucee-dir}
+            ${pkgs.coreutils}/bin/mkdir -p ${lucee-dir}/server/lucee-server/deploy
             ${pkgs.coreutils}/bin/chmod 0755 ${lucee-dir}
             ${pkgs.coreutils}/bin/chown -R ${config.services.tomcat.user}:${config.services.tomcat.group} ${lucee-dir}
         '' else "");
