@@ -1,7 +1,7 @@
 { lib, config, pkgs, ... }:
 let
   extensionUtils = import ./extensions.nix { inherit lib pkgs; };
-  luceeJarUtils = import ./lucee.nix { inherit lib pkgs; };
+  luceeJarUtils = import ./luceeJar.nix { inherit lib pkgs; };
   lucee-dir = "/opt/lucee";
 
   lucee = luceeJarUtils.versions.lucee7-zero; #admin & docs can be added as extensions if needed
