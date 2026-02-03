@@ -2,21 +2,10 @@
 let
   # Import extension management utilities
   extensionUtils = import ./extensions.nix { inherit lib pkgs; };
+  luceeUtils = import ./lucee.nix { inherit lib pkgs; };
   lucee-dir = "/opt/lucee";
 
-  lucee = pkgs.stdenv.mkDerivation {
-    version = "light-7.0.1.100";
-    name = "lucee-${lucee.version}";
-    src = pkgs.fetchurl {
-      url = "https://cdn.lucee.org/${lucee.name}.jar";
-      sha256 = "1biwx0qx4r3fnpm6n88zjw3f6f02bm3hz497nvkkkm9lqw9hkg0j";
-    };
-    dontUnpack = true;
-    installPhase = ''
-      mkdir -p $out
-      cp $src $out/lucee.jar
-    '';
-  };
+  lucee = luceeUtils.versions.lucee7-zero;
 
   lucee-dockerfiles = pkgs.fetchFromGitHub {
     owner = "lucee";
