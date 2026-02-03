@@ -1,8 +1,13 @@
 { lib, pkgs }:
 
 let
-  mkLuceeExtension = { name, version, sha256 ? lib.fakeHash }: pkgs.stdenv.mkDerivation {
-    inherit version name;
+  mkLuceeExtension = {
+    name,
+    description ? "Lucee Extension",
+    version,
+    sha256 ? lib.fakeHash
+  }: pkgs.stdenv.mkDerivation {
+    inherit version name description;
     src = pkgs.fetchurl {
       url = "https://ext.lucee.org/${name}-${version}.lex";
       inherit sha256;
@@ -17,12 +22,14 @@ let
   extensionDefinitions = {
     cfspreadsheet = mkLuceeExtension {
       name = "cfspreadsheet";
+      description = "A spreadsheet extension for Lucee 5";
       version = "3.0.4";
       sha256 = "1cccdqa15cafi1q4xnfmq69bq7saxl84jiwjb41mjhpmji0dsnz9";
     };
 
     image-extension = mkLuceeExtension {
       name = "image-extension";
+      description = "Lucee Image Extension provides essential image manipulation tags and functions (cfimage, imageCrop, imageNew, etc.) for Lucee 7+ running on Jakarta EE containers. This version requires Lucee 7 and is compatible with Tomcat 10+. For Lucee 6 installations, please use Image Extension 2.x instead.";
       version = "3.0.0.6";
       sha256 = "1ddi5d96iinqfzrb8f17hp0ddckas7yx2qvjqkr9pw7wh4pn0cjv";
     };
