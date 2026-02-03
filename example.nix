@@ -1,11 +1,11 @@
 { lib, config, pkgs, ... }:
 let
   lucee = pkgs.stdenv.mkDerivation {
-    version = "7.0.1.100";
+    version = "light-7.0.1.100";
     name = "lucee-${lucee.version}";
     src = pkgs.fetchurl {
       url = "https://cdn.lucee.org/${lucee.name}.jar";
-      sha256 = "0s56sd4m71ryqkn6szd4xd24rhmmv5zsl3frvrs6f6s8bf8invi0";
+      sha256 = "1biwx0qx4r3fnpm6n88zjw3f6f02bm3hz497nvkkkm9lqw9hkg0j";
     };
     dontUnpack = true;
     installPhase = ''
