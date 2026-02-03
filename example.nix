@@ -1,11 +1,10 @@
 { lib, config, pkgs, ... }:
 let
-  # Import extension management utilities
   extensionUtils = import ./extensions.nix { inherit lib pkgs; };
-  luceeUtils = import ./lucee.nix { inherit lib pkgs; };
+  luceeJarUtils = import ./lucee.nix { inherit lib pkgs; };
   lucee-dir = "/opt/lucee";
 
-  lucee = luceeUtils.versions.lucee7-zero;
+  lucee = luceeJarUtils.versions.lucee7-zero; #admin & docs can be added as extensions if needed
 
   lucee-dockerfiles = pkgs.fetchFromGitHub {
     owner = "lucee";
@@ -17,7 +16,7 @@ let
   extensions = {
     inherit (extensionUtils.extensionDefinitions)
       cfspreadsheet
-      image-extension;
+      luceeAdministrator;
   };
 
   # webapp must be in directory named webapps/ROOT

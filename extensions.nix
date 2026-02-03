@@ -27,11 +27,25 @@ let
       sha256 = "1cccdqa15cafi1q4xnfmq69bq7saxl84jiwjb41mjhpmji0dsnz9";
     };
 
-    image-extension = mkLuceeExtension {
+    imageExtension = mkLuceeExtension {
       name = "image-extension";
       description = "Lucee Image Extension provides essential image manipulation tags and functions (cfimage, imageCrop, imageNew, etc.) for Lucee 7+ running on Jakarta EE containers. This version requires Lucee 7 and is compatible with Tomcat 10+. For Lucee 6 installations, please use Image Extension 2.x instead.";
       version = "3.0.0.6";
       sha256 = "1ddi5d96iinqfzrb8f17hp0ddckas7yx2qvjqkr9pw7wh4pn0cjv";
+    };
+
+    luceeAdministrator = mkLuceeExtension {
+      name = "administrator-extension";
+      description = "Core Extension to integrate the Lucee Administrator into Lucee.";
+      version = "1.0.0.6";
+      sha256 = "0181pq87max0nzc3y01agxvrapmzp7nwb4mwghz9hn6nr7idqdlg";
+    };
+
+    luceeDocumentation = mkLuceeExtension {
+      name = "documentation-extension";
+      description = "Core Extension to integrate the Lucee Documentation into Lucee.";
+      version = "1.0.0.5";
+      sha256 = "1m69h1x4vvnsqwkrjagnizyj5cmvycg6sf1xjvqvajzngn16dw9h";
     };
   };
 
