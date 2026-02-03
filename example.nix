@@ -16,7 +16,7 @@ let
   extensions = {
     inherit (extensionUtils.extensionDefinitions)
       cfspreadsheet
-      luceeAdministrator;
+      administrator-extension;
   };
 
   # webapp must be in directory named webapps/ROOT
