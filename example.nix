@@ -1,17 +1,8 @@
 { lib, config, pkgs, ... }:
 let
   extensionUtils = import ./extensions.nix { inherit lib pkgs; };
-  luceeJarUtils = import ./luceeJar.nix { inherit lib pkgs; };
+  luceeUtils = import ./lucee.nix { inherit lib pkgs; };
   lucee-dir = "/opt/lucee";
-
-  lucee = luceeJarUtils.versions.lucee7-zero; #admin & docs can be added as extensions if needed
-
-  lucee-dockerfiles = pkgs.fetchFromGitHub {
-    owner = "lucee";
-    repo = "lucee-dockerfiles";
-    rev = "0b34c46e8c1385d7c4014ee6c154476a9995189d";
-    sha256 = "sha256-tzR30emegBC27E4XImgQrOBTYOGacaXmdvCZrvjLhsg=";
-  };
 
   extensions = {
     inherit (extensionUtils.extensionDefinitions)
@@ -19,26 +10,10 @@ let
       administrator-extension;
   };
 
-  # webapp must be in directory named webapps/ROOT
-  webapp = pkgs.runCommand "lucee-webapp-root" {} ''
-    mkdir -p $out/webapps
-    ln -s ${lucee-dockerfiles}/www $out/webapps/ROOT
-  '';
-
-  tomcat-lucee = pkgs.tomcat11.overrideAttrs (oldAttrs: {
-    name = "${oldAttrs.pname}-${oldAttrs.version}-lucee-${lucee.version}";
-    postFixup = (oldAttrs.postFixup or "") + ''
-      cp -f ${lucee-dockerfiles}/config/tomcat/11.0/* $out/conf/
-
-      # Replace hardcoded /var/www/ with Tomcat's webapps dir
-      substituteInPlace $out/conf/server.xml \
-        --replace '/var/www/' '${config.services.tomcat.baseDir}/webapps/ROOT/' \
-        --replace 'port="8888"' 'port="${toString config.services.tomcat.port}"'
-
-      mkdir -p $out/lucee
-      ln -s ${lucee}/lucee.jar $out/lucee/lucee.jar
-    '';
-  });
+  tomcat-lucee = luceeUtils.mkTomcatLucee { 
+    inherit config; 
+    luceeJar = luceeUtils.jar.lucee7-zero; 
+  };
 in
 {
   services.tomcat = {
@@ -50,7 +25,7 @@ in
 
     serverXml = builtins.readFile "${tomcat-lucee}/conf/server.xml";
 
-    webapps = [ webapp ];
+    webapps = [ luceeUtils.examplePage ];
   };
 
   systemd = {
@@ -93,7 +68,6 @@ in
             ${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}
           '';
           RemainAfterExit = true;
-          # User = "root";  # Need root to change ownership
         };
       };
     };
