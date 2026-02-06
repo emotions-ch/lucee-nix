@@ -23,7 +23,7 @@ in
   services.tomcat = {
     enable = true;
     package = tomcat-lucee;
-    jdk = pkgs.openjdk25;
+    jdk = pkgs.openjdk"${luceeUtils.jar.lucee7-zero.javaVersion}";
     purifyOnStart = true;
     port = 8888;
 

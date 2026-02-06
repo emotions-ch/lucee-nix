@@ -13,11 +13,12 @@ let
     description ? "Lucee Server Jar",
     version,
     sha256 ? lib.fakeHash,
-    tomcatPackage ? pkgs.tomcat11
+    tomcatPackage ? pkgs.tomcat11,
+    javaVersion ? 21
   }: pkgs.stdenv.mkDerivation {
     inherit version name description;
     passthru = {
-      inherit tomcatPackage;
+      inherit tomcatPackage javaVersion;
     };
     src = pkgs.fetchurl {
       url = "https://cdn.lucee.org/${name}-${version}.jar";
@@ -41,7 +42,7 @@ let
       description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
       version = "7.0.1.100";
       sha256 = "05xzrvjan5vpd4jzq54xp0nhiiwnk6ixn6xs45f4v2wscvkapvzd";
-      # Uses default Tomcat 11
+      javaVersion = 25;
     };
   };
 
