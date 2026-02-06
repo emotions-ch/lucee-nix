@@ -50,6 +50,24 @@ SystemD service configuration that:
 - Lucee extensions from https://ext.lucee.org/
 - Lucee dockerfiles from GitHub for default config & example WebPage ([lucee/lucee-dockerfiles](https://github.com/lucee/lucee-dockerfiles))
 
+## Development
+
+### Getting Started
+
+This project uses Nix Flakes for development. To get started:
+
+```bash
+# Clone the repository
+git clone https://github.com/emotions-ch/lucee-nix.git
+cd lucee-nix
+
+# Enter the development environment
+nix develop
+
+# Run validation tests
+validate-all
+```
+
 ## Contributing
 
 Go ahead ;3
