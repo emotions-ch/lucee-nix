@@ -7,7 +7,7 @@ in
   systemd = {
     services = {
       tomcat = {
-        after = [ "lucee-setup.service" ];
+        after = [ "lucee-setup.service" "network-online.target"];
         requires = [ "lucee-setup.service" ];
         preStart = lib.mkAfter ''
           cp -f ${cfConfigJSON} ${lucee-dir}/server/lucee-server/deploy/.CFConfig.json
