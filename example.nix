@@ -14,10 +14,22 @@ let
     inherit config; 
     luceeJar = luceeUtils.jar.lucee7-zero; 
   };
+
+  # gets converted to json for CFConfig
+  cfConfig = {
+    dataSources = {
+      myds = {
+        host = "localhost";
+        username = "MYDS_USERNAME";
+        password = "MYDS_PASSWORD";
+        url = "{system:myds.url}";
+      };
+    };
+  };
 in
 {
   imports = [
-    (import ./systemd.nix { inherit lib config pkgs extensions lucee-dir; })
+    (import ./systemd.nix { inherit lib config pkgs extensions cfConfig lucee-dir; })
   ];
 
   services.tomcat = {

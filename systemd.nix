@@ -1,6 +1,7 @@
-{ lib, config, pkgs, lucee-dir, extensions ? {}, ... }:
+{ lib, config, pkgs, lucee-dir, cfConfig ? {}, extensions ? {}, ... }:
 let
   extensionUtils = import ./extensions.nix { inherit lib pkgs; };
+  cfConfigJSON = pkgs.writeText ".CFConfig.json" "${builtins.toJSON cfConfig}";
 in
 {
   systemd = {
@@ -9,7 +10,10 @@ in
         after = [ "lucee-setup.service" ];
         requires = [ "lucee-setup.service" ];
         preStart = lib.mkAfter ''
+          # extensions
           ${lib.optionalString (extensions != {}) "${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}"}
+
+          cp ${cfConfigJSON} ${lucee-dir}/server/lucee-server/deploy/
           ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
         '';
 
