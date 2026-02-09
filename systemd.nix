@@ -10,8 +10,8 @@ in
         after = [ "lucee-setup.service" ];
         requires = [ "lucee-setup.service" ];
         preStart = lib.mkAfter ''
-          cp -f ${cfConfigJSON} ${lucee-dir}/server/lucee-server/deploy/
-          cp -f ${cfConfigJSON} ${lucee-dir}/
+          cp -f ${cfConfigJSON} ${lucee-dir}/server/lucee-server/deploy/.CFConfig.json
+          cp -f ${cfConfigJSON} ${lucee-dir}/.CFConfig.json
           # extensions
           ${lib.optionalString (extensions != {}) "${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}"}
 
