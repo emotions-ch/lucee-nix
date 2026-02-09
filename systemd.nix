@@ -17,9 +17,10 @@ in
 
           ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
 
+          # on first installation of lucee, tomcat needs to be restarted.
+          # I am aware that this is a non-pretty way of doing this so if you have any other ideas please lmk
           MARKER_FILE="${lucee-dir}/.first-deployment-complete"
           if [ ! -f "$MARKER_FILE" ]; then
-            echo "First deployment detected, creating marker..."
             ${pkgs.coreutils}/bin/touch "$MARKER_FILE"
             ${pkgs.coreutils}/bin/chown ${config.services.tomcat.user}:${config.services.tomcat.group} "$MARKER_FILE"
 
