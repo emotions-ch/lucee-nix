@@ -16,6 +16,15 @@ in
           ${lib.optionalString (extensions != {}) "${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}"}
 
           ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
+
+          MARKER_FILE="${lucee-dir}/.first-deployment-complete"
+          if [ ! -f "$MARKER_FILE" ]; then
+            echo "First deployment detected, creating marker..."
+            ${pkgs.coreutils}/bin/touch "$MARKER_FILE"
+            ${pkgs.coreutils}/bin/chown ${config.services.tomcat.user}:${config.services.tomcat.group} "$MARKER_FILE"
+
+            (sleep 5 && ${pkgs.systemd}/bin/systemctl restart tomcat.service) &
+          fi
         '';
 
         postStop = lib.mkAfter (if config.services.tomcat.purifyOnStart then ''
