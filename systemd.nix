@@ -11,6 +11,7 @@ in
         requires = [ "lucee-setup.service" ];
         preStart = lib.mkAfter ''
           cp -f ${cfConfigJSON} ${lucee-dir}/server/lucee-server/deploy/
+          cp -f ${cfConfigJSON} ${lucee-dir}/
           # extensions
           ${lib.optionalString (extensions != {}) "${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}"}
 
@@ -36,7 +37,7 @@ in
         serviceConfig = {
           Type = "oneshot";
           ExecStart = ''
-            ${pkgs.coreutils}/bin/mkdir -p ${lucee-dir}
+            ${pkgs.coreutils}/bin/mkdir -p ${lucee-dir}/server/lucee-server/deploy/
             ${pkgs.coreutils}/bin/chmod 0755 ${lucee-dir}
             ${pkgs.coreutils}/bin/chown -R ${config.services.tomcat.user}:${config.services.tomcat.group} ${lucee-dir}
           '';
