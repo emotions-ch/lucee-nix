@@ -47,6 +47,12 @@ let
       version = "1.0.0.5";
       sha256 = "1m69h1x4vvnsqwkrjagnizyj5cmvycg6sf1xjvqvajzngn16dw9h";
     };
+    "org.postgresql.jdbc" = mkLuceeExtension {
+      name = "org.postgresql.jdbc";
+      description = "JDBC Driver for the PostgreSQL Database.";
+      version = "42.7.7";
+      sha256 = "0yd0n2ngwqf536knslpmhi3pixqnxfm0rk3jxy8abvihq9mdri4l";
+    };
   };
 
 in
