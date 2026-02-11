@@ -16,16 +16,6 @@ in
           ${lib.optionalString (extensions != {}) "${extensionUtils.mkExtensionDeployScript extensions} ${lucee-dir}/server/lucee-server/deploy ${config.services.tomcat.user} ${config.services.tomcat.group}"}
 
           ln -sfn ${config.services.tomcat.package}/lucee ${config.services.tomcat.baseDir}
-
-          # on first installation of lucee, tomcat needs to be restarted.
-          # I am aware that this is a non-pretty way of doing this so if you have any other ideas please lmk
-          MARKER_FILE="${lucee-dir}/.first-deployment-complete"
-          if [ ! -f "$MARKER_FILE" ]; then
-            ${pkgs.coreutils}/bin/touch "$MARKER_FILE"
-            ${pkgs.coreutils}/bin/chown ${config.services.tomcat.user}:${config.services.tomcat.group} "$MARKER_FILE"
-
-            (sleep 5 && ${pkgs.systemd}/bin/systemctl restart tomcat.service) &
-          fi
         '';
 
         postStop = lib.mkAfter (if config.services.tomcat.purifyOnStart then ''
@@ -52,6 +42,32 @@ in
             ${pkgs.coreutils}/bin/chown -R ${config.services.tomcat.user}:${config.services.tomcat.group} ${lucee-dir}
           '';
           RemainAfterExit = true;
+        };
+      };
+
+      "lucee-first-deployment" = {
+        description = "Handle Lucee first deployment restart";
+        after = [ "tomcat.service" ];
+        wants = [ "tomcat.service" ];
+        wantedBy = [ "multi-user.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "lucee-first-deploy" ''
+            MARKER_FILE="${lucee-dir}/.first-deployment-complete"
+            if [ ! -f "$MARKER_FILE" ]; then
+              # Wait for tomcat to be fully started and lucee to initialize
+              sleep 10
+
+              # Create marker before restart to prevent loops
+              ${pkgs.coreutils}/bin/touch "$MARKER_FILE"
+              ${pkgs.coreutils}/bin/chown ${config.services.tomcat.user}:${config.services.tomcat.group} "$MARKER_FILE"
+
+              # Proper restart through systemd
+              ${pkgs.systemd}/bin/systemctl restart tomcat.service
+            fi
+          '';
         };
       };
     };
