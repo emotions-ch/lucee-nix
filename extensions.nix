@@ -47,11 +47,19 @@ let
       version = "1.0.0.5";
       sha256 = "1m69h1x4vvnsqwkrjagnizyj5cmvycg6sf1xjvqvajzngn16dw9h";
     };
+
     "org.postgresql.jdbc" = mkLuceeExtension {
       name = "org.postgresql.jdbc";
       description = "JDBC Driver for the PostgreSQL Database.";
       version = "42.7.7";
       sha256 = "0yd0n2ngwqf536knslpmhi3pixqnxfm0rk3jxy8abvihq9mdri4l";
+    };
+
+    s3-extension = mkLuceeExtension {
+      name = "s3-extension";
+      description = "Core Extension to integrate Amazon Simple Storage Service (S3) Resource into Lucee.";
+      version = "2.0.3.0";
+      sha256 = "1mzjss4n8f49h7cwfwhpr9v2cpcm7sa0z6gdfcpg22120bgcli6n";
     };
   };
 
