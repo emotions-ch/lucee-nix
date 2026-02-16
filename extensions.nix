@@ -61,6 +61,13 @@ let
       version = "2.0.3.0";
       sha256 = "1mzjss4n8f49h7cwfwhpr9v2cpcm7sa0z6gdfcpg22120bgcli6n";
     };
+
+    "org.lucee.mssql" = mkLuceeExtension {
+      name = "org.lucee.mssql";
+      description = "JDBC Driver from Microsoft for SQL Server, SQL Server is a relational database management system developed by Microsoft.";
+      version = "13.2.1";
+      sha256 = "0wh7q4yra7i3rqxb42pcvkad219m6z7f6dsd2gqrmh93q0d8nwqf";
+    };
   };
 
 in
