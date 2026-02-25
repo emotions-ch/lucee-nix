@@ -1,4 +1,4 @@
-{ lib, config, pkgs, lucee-dir ? "/opt/lucee", cfConfig ? {}, extensions ? {}, ... }:
+{ lib, config, pkgs, lucee-dir ? "/opt/lucee", cfConfig ? { }, extensions ? { }, ... }:
 let
   extensionUtils = import ./extensions.nix { inherit lib pkgs; };
   cfConfigJSON = pkgs.writeText ".CFConfig.json" "${builtins.toJSON cfConfig}";
@@ -19,12 +19,12 @@ in
         '';
 
         postStop = lib.mkAfter (if config.services.tomcat.purifyOnStart then ''
-            ${pkgs.coreutils}/bin/rm -rf ${lucee-dir}/*
-            ${pkgs.coreutils}/bin/find ${lucee-dir} -mindepth 1 -delete 2>/dev/null || true
+          ${pkgs.coreutils}/bin/rm -rf ${lucee-dir}/*
+          ${pkgs.coreutils}/bin/find ${lucee-dir} -mindepth 1 -delete 2>/dev/null || true
 
-            ${pkgs.coreutils}/bin/mkdir -p ${lucee-dir}/server/lucee-server/deploy
-            ${pkgs.coreutils}/bin/chmod 0755 ${lucee-dir}
-            ${pkgs.coreutils}/bin/chown -R ${config.services.tomcat.user}:${config.services.tomcat.group} ${lucee-dir}
+          ${pkgs.coreutils}/bin/mkdir -p ${lucee-dir}/server/lucee-server/deploy
+          ${pkgs.coreutils}/bin/chmod 0755 ${lucee-dir}
+          ${pkgs.coreutils}/bin/chown -R ${config.services.tomcat.user}:${config.services.tomcat.group} ${lucee-dir}
         '' else "");
       };
 

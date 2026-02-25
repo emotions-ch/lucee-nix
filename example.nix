@@ -10,9 +10,9 @@ let
       administrator-extension;
   };
 
-  tomcat-lucee = luceeUtils.mkTomcatLucee { 
-    inherit config; 
-    luceeJar = luceeUtils.jar.lucee7-zero; 
+  tomcat-lucee = luceeUtils.mkTomcatLucee {
+    inherit config;
+    luceeJar = luceeUtils.jar.lucee7-zero;
   };
 
   # gets converted to json for CFConfig
