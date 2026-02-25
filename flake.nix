@@ -45,7 +45,7 @@
           # Packages - expose our modules as packages
           packages = {
             TomcatLucee = luceeUtils.mkTomcatLucee {
-              luceeJar = luceeUtils.jar.lucee7-zero;
+              luceeJar = "lucee7-zero";
             };
           };
 

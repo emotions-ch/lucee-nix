@@ -52,13 +52,13 @@ let
     ln -s ${lucee-dockerfiles}/www $out/webapps/ROOT
   '';
 
-  mkTomcatLucee = { baseDir ? "$out", port ? 8888, luceeJar, tomcatPackage ? luceeJar.tomcatPackage }:
+  mkTomcatLucee = { baseDir ? "$out", port ? 8888, luceeJar, tomcatPackage ? jar.${luceeJar}.tomcatPackage }:
     let
       # Extract major version from Tomcat package version (e.g., "11.0.2" -> "11.0")
       tomcatMajorVersion = lib.concatStringsSep "." (lib.take 2 (lib.splitString "." tomcatPackage.version));
     in
     tomcatPackage.overrideAttrs (oldAttrs: {
-      name = "${oldAttrs.pname}-${oldAttrs.version}-lucee-${luceeJar.version}";
+      name = "${oldAttrs.pname}-${oldAttrs.version}-lucee-${jar.${luceeJar}.version}";
       postFixup = (oldAttrs.postFixup or "") + ''
           cp -f ${lucee-dockerfiles}/config/tomcat/${tomcatMajorVersion}/* $out/conf/
 
@@ -68,7 +68,7 @@ let
           --replace 'port="8888"' 'port="${toString port}"'
 
         mkdir -p $out/lucee
-        ln -s ${luceeJar}/lucee.jar $out/lucee/lucee.jar
+        ln -s ${jar.${luceeJar}}/lucee.jar $out/lucee/lucee.jar
       '';
     });
 
