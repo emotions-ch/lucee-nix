@@ -52,7 +52,7 @@ let
     ln -s ${lucee-dockerfiles}/www $out/webapps/ROOT
   '';
 
-  mkTomcatLucee = { config, luceeJar, tomcatPackage ? luceeJar.tomcatPackage }:
+  mkTomcatLucee = { baseDir ? "$out", port ? 8888, luceeJar, tomcatPackage ? luceeJar.tomcatPackage }:
     let
       # Extract major version from Tomcat package version (e.g., "11.0.2" -> "11.0")
       tomcatMajorVersion = lib.concatStringsSep "." (lib.take 2 (lib.splitString "." tomcatPackage.version));
@@ -64,8 +64,8 @@ let
 
         # Replace hardcoded /var/www/ with Tomcat's webapps dir
         substituteInPlace $out/conf/server.xml \
-          --replace '/var/www/' '${config.services.tomcat.baseDir}/webapps/ROOT/' \
-          --replace 'port="8888"' 'port="${toString config.services.tomcat.port}"'
+          --replace '/var/www/' '${baseDir}/webapps/ROOT/' \
+          --replace 'port="8888"' 'port="${toString port}"'
 
         mkdir -p $out/lucee
         ln -s ${luceeJar}/lucee.jar $out/lucee/lucee.jar
