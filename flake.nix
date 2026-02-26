@@ -10,12 +10,27 @@
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ luceeOverlay ];
+          };
 
-          # Import our modules
           luceeUtils = import ./lucee.nix { inherit (pkgs) lib; inherit pkgs; };
           extensionUtils = import ./extensions.nix { inherit (pkgs) lib; inherit pkgs; };
 
+          mkTomcatLucee = pkgs: {
+            baseDir ? "webapps/ROOT/",
+            port ? 8888,
+            luceeJar ? "lucee7-zero",
+            tomcatPackage ? luceeUtils.jar.lucee7-zero.tomcatPackage
+          }:luceeUtils.mkTomcatLucee {
+            inherit luceeJar port baseDir tomcatPackage;
+          };
+          
+          luceeOverlay = final: prev: {
+            # Here we pass `final` (the final pkgs set) to our generator
+            mkTomcatLucee = mkTomcatLucee final;
+          };
 
         in
         {
@@ -40,11 +55,11 @@
             '';
           };
 
+          overlays.default = luceeOverlay;
+
           # Packages
           packages = {
-            TomcatLucee = luceeUtils.mkTomcatLucee {
-              luceeJar = "lucee7-zero";
-            };
+            default = pkgs.mkTomcatLucee { };
           };
 
           # Checks - automated validation
