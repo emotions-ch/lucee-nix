@@ -29,8 +29,6 @@
               deadnix
 
               jq
-
-              # Java (for understanding Lucee JARs)
               openjdk
             ];
 
@@ -42,7 +40,7 @@
             '';
           };
 
-          # Packages - expose our modules as packages
+          # Packages
           packages = {
             TomcatLucee = luceeUtils.mkTomcatLucee {
               luceeJar = "lucee7-zero";
