@@ -58,7 +58,7 @@ let
       tomcatMajorVersion = lib.concatStringsSep "." (lib.take 2 (lib.splitString "." tomcatPackage.version));
     in
     tomcatPackage.overrideAttrs (oldAttrs: {
-      name = "${oldAttrs.pname}-${oldAttrs.version}-lucee-${jar.${luceeJar}.version}";
+      name = "${oldAttrs.pname}-${oldAttrs.version}-${jar.${luceeJar}.name}-${jar.${luceeJar}.version}";
       postFixup = (oldAttrs.postFixup or "") + ''
           cp -f ${lucee-dockerfiles}/config/tomcat/${tomcatMajorVersion}/* $out/conf/
 
