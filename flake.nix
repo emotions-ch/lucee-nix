@@ -7,6 +7,28 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
+    let
+      # Define overlay outside system scope to avoid circular dependency
+      luceeOverlay = final: prev:
+        let
+          luceeUtils = import ./lucee.nix { inherit (final) lib; pkgs = final; };
+          extensionUtils = import ./extensions.nix { inherit (final) lib; pkgs = final; };
+
+          mkTomcatLucee = pkgs: {
+            baseDir ? "webapps/ROOT/",
+            port ? 8888,
+            luceeJar ? "lucee7-zero",
+            tomcatPackage ? luceeUtils.jar.lucee7-zero.tomcatPackage
+          }: luceeUtils.mkTomcatLucee {
+            inherit luceeJar port baseDir tomcatPackage;
+          };
+        in {
+          # Here we pass `final` (the final pkgs set) to our generator
+          mkTomcatLucee = mkTomcatLucee final;
+          mkLuceeExtension = extensionUtils.mkLuceeExtension;
+          luceeExtensions = extensionUtils.extensionDefinitions;
+        };
+    in
     flake-utils.lib.eachDefaultSystem
       (system:
         let
@@ -14,26 +36,7 @@
             inherit system;
             overlays = [ luceeOverlay ];
           };
-
-          luceeUtils = import ./lucee.nix { inherit (pkgs) lib; inherit pkgs; };
-          extensionUtils = import ./extensions.nix { inherit (pkgs) lib; inherit pkgs; };
-
-          mkTomcatLucee = pkgs: {
-            baseDir ? "webapps/ROOT/",
-            port ? 8888,
-            luceeJar ? "lucee7-zero",
-            tomcatPackage ? luceeUtils.jar.lucee7-zero.tomcatPackage
-          }:luceeUtils.mkTomcatLucee {
-            inherit luceeJar port baseDir tomcatPackage;
-          };
-          
-          luceeOverlay = final: prev: {
-            # Here we pass `final` (the final pkgs set) to our generator
-            mkTomcatLucee = mkTomcatLucee final;
-          };
-
-        in
-        {
+        in {
           # Development shell
           devShells.default = pkgs.mkShell {
             name = "lucee-nix-dev";
@@ -70,5 +73,8 @@
               ./systemd.nix
             ];
           };
-        }) // { };
+        }) // {
+          # Expose overlay at flake level
+          overlays.default = luceeOverlay;
+        };
 }
