@@ -69,11 +69,18 @@ let
       sha256 = "0wh7q4yra7i3rqxb42pcvkad219m6z7f6dsd2gqrmh93q0d8nwqf";
     };
 
-    "hibernate.extension" = mkLuceeExtension {
+    hibernate = mkLuceeExtension {
       name = "hibernate.extension";
       description = "Hibernate ORM (Hibernate in short) is an object-relational mapping library for the Java language";
       version = "3.5.5.89";
       sha256 = "0q0bs9slc6xfkf05dk9pbv8fr1npbbcl2qjpm9v2rx36wawk17h6";
+    };
+
+    compress = mkLuceeExtension {
+      name = "compress-extension";
+      version = "2.0.0.3";
+      description = "Compress Tags (cfzip, cfzipparam)";
+      sha256 = "1nc5r19m3gjj5mm1nnvbk1nycc1mpvxmlrk09h360nxlg64440ar";
     };
   };
 
