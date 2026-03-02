@@ -68,6 +68,13 @@ let
       version = "13.2.1";
       sha256 = "0wh7q4yra7i3rqxb42pcvkad219m6z7f6dsd2gqrmh93q0d8nwqf";
     };
+
+    "hibernate.extension" = mkLuceeExtension {
+      name = "hibernate.extension";
+      description = "Hibernate ORM (Hibernate in short) is an object-relational mapping library for the Java language";
+      version = "3.5.5.89";
+      sha256 = "0q0bs9slc6xfkf05dk9pbv8fr1npbbcl2qjpm9v2rx36wawk17h6";
+    };
   };
 
 in
