@@ -39,11 +39,9 @@ SystemD service configuration that:
 - Handles extension deployment during service startup
 - Provides cleanup on service stop (when purifyOnStart is enabled)
 
-### `example.nix`
-[Example NixOS configuration](./example.nix) demonstrating:
-- How to integrate the Lucee module into a NixOS system
-- Tomcat service configuration with Lucee
-- Extension usage patterns
+### `examples`
+[Example NixOS configuration](./examples/configuration.nix)
+[Example Nix devShell](./examples/devshell.nix)
 
 ### and some External Dependencies
 - Lucee JAR files from https://cdn.lucee.org/
