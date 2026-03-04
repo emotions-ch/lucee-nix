@@ -6,6 +6,8 @@ A NixOS module that provides declarative packaging and deployment infrastructure
 
 This project enables easy deployment of [Single Mode](https://docs.lucee.org/recipes/single-vs-multi-mode.html#what-is-single-mode) Lucee applications on NixOS systems using declarative configuration. It provides a modern, infrastructure-as-code approach to deploying CFML applications with the benefits of NixOS's reproducible builds and atomic deployments.
 
+For local development it can be integrated with [lucee-manager](https://github.com/emotions-ch/lucee-manager) for developing multiple projects behind a reverse proxy
+
 ## Features
 
 - **Declarative Configuration**: Full NixOS-style declarative setup
@@ -40,8 +42,8 @@ SystemD service configuration that:
 - Provides cleanup on service stop (when purifyOnStart is enabled)
 
 ### `examples`
-[Example NixOS configuration](./examples/configuration.nix)
-[Example Nix devShell](./examples/devshell.nix)
+- [Example NixOS configuration](./examples/configuration.nix)
+- [Example Nix devShell](./examples/devshell.nix)
 
 ### and some External Dependencies
 - Lucee JAR files from https://cdn.lucee.org/
@@ -61,9 +63,6 @@ cd lucee-nix
 
 # Enter the development environment
 nix develop
-
-# Run validation tests
-validate-all
 ```
 
 ## Contributing
