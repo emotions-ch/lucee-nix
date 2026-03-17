@@ -1,4 +1,15 @@
-{ pkgs, lucee, extensions, prodCfConfig, project, webapp, isMasa ? false, LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m", javaPackage ? pkgs.openjdk25, tag ? "latest" }:
+{
+  pkgs,
+  lucee,
+  extensions,
+  prodCfConfig,
+  project,
+  webapp,
+  isMasa ? false,
+  LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m",
+  javaPackage ? pkgs.openjdk25,
+  tag ? "latest",
+}:
 
 let
   cfConfig = pkgs.writeText "cfconfig-prod-template.json" (builtins.toJSON prodCfConfig);
@@ -28,16 +39,21 @@ let
     #!${pkgs.dash}
     set -e
 
-    ${if isMasa then ''
-      # For Masa CMS, check for "Document Moved" from root, this means all masa initialization has worked
-      if curl --max-time 15 "http://localhost:8888/" 2>/dev/null | grep -q "Document Moved"; then
-        exit 0
+    ${
+      if isMasa then
+        ''
+          # For Masa CMS, check for "Document Moved" from root, this means all masa initialization has worked
+          if curl --max-time 15 "http://localhost:8888/" 2>/dev/null | grep -q "Document Moved"; then
+            exit 0
+          else
+            exit 1
+          fi
+        ''
       else
-        exit 1
-      fi
-    '' else ''
-      curl -f --max-time 10 "http://localhost:8888/health/"
-    ''}
+        ''
+          curl -f --max-time 10 "http://localhost:8888/health/"
+        ''
+    }
   '';
 
   buildTimeSetupScript = pkgs.writeShellScript "build-setup.sh" ''
@@ -50,7 +66,9 @@ let
     ln -sf /app /opt/lucee/webapps/ROOT
 
     # Deploy Lucee extensions
-    ${pkgs.lib.concatMapStringsSep "\n    " (ext: "cp -f ${ext}/*.lex /opt/lucee/lucee-server/deploy/") extensions}
+    ${pkgs.lib.concatMapStringsSep "\n    " (
+      ext: "cp -f ${ext}/*.lex /opt/lucee/lucee-server/deploy/"
+    ) extensions}
 
     mkdir -p /opt/lucee/webapps/health
     cp ${cfConfig} /opt/lucee/lucee-server/deploy/.CFConfig.json
@@ -156,7 +174,7 @@ pkgs.dockerTools.buildImage {
       lucee
 
       # Application wwwroot directory
-      (pkgs.runCommand "copy-wwwroot" {} ''
+      (pkgs.runCommand "copy-wwwroot" { } ''
         mkdir -p $out/app
         cp -r ${webapp}/** $out/app/
       '')
@@ -166,7 +184,7 @@ pkgs.dockerTools.buildImage {
   config = {
     Cmd = [ "${containerInitScript}/bin/container-init.sh" ];
     ExposedPorts = {
-      "8888/tcp" = {};
+      "8888/tcp" = { };
     };
     Env = [
       "JAVA_HOME=${pkgs.openjdk25}"
@@ -176,12 +194,15 @@ pkgs.dockerTools.buildImage {
     ];
     User = "lucee";
     WorkingDir = "/opt/lucee";
-    
+
     # Health check configuration
     Healthcheck = {
-      Test = [ "CMD" "/opt/lucee/health-check.sh" ];
+      Test = [
+        "CMD"
+        "/opt/lucee/health-check.sh"
+      ];
       Interval = 30000000000; # 30 seconds in nanoseconds
-      Timeout = 15000000000;  # 15 seconds in nanoseconds (increased for DB operations)
+      Timeout = 15000000000; # 15 seconds in nanoseconds (increased for DB operations)
       Retries = 3;
       StartPeriod = 90000000000; # 90 seconds in nanoseconds (increased for DB warmup)
     };

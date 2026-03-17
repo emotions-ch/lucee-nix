@@ -10,9 +10,10 @@
     };
   };
 
-  outputs = { nixpkgs, ... }@inputs:
-  inputs.flake-utils.lib.eachDefaultSystem
-    (system:
+  outputs =
+    { nixpkgs, ... }@inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -43,18 +44,23 @@
             echo ""
             echo "------ Warmup ------"
             echo ""
+            cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
             mkdir -p $CATALINA_BASE/lucee-server/deploy
-
             cp -f ${cfConfigJSON} $CATALINA_BASE/lucee-server/deploy/.CFConfig.json
+
             # Copy all extensions to deploy folder
-            ${pkgs.lib.concatMapStringsSep "\n            " (ext: "cp -f ${ext}/*.lex $CATALINA_BASE/lucee-server/deploy/") extensions}
+            ${pkgs.lib.concatMapStringsSep "\n            " (
+              ext: "cp -f ${ext}/*.lex $CATALINA_BASE/lucee-server/deploy/"
+            ) extensions}
 
             LUCEE_ENABLE_WARMUP=1 $CATALINA_BASE/bin/catalina.sh run
             echo ""
             echo "------ Warmup complete ------"
             echo ""
 
-            DATASOURCE_SECRET=$(cat $PWD/${cfConfig.dataSources.${project}.host}.secret) $CATALINA_BASE/bin/catalina.sh run
+            DATASOURCE_SECRET=$(cat $PWD/${
+              cfConfig.dataSources.${project}.host
+            }.secret) $CATALINA_BASE/bin/catalina.sh run
           fi
         '';
 
@@ -73,14 +79,17 @@
 
             chmod -R u+w "$CATALINA_BASE"
             cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
+
           else
             echo "Lucee instance already exists at $CATALINA_BASE"
             echo "Use 'start-lucee' to start the server"
           fi
         '';
 
-        project = "my-lucee-app";
+        project = "example";
         cfConfigJSON = pkgs.writeText ".CFConfig.json" "${builtins.toJSON cfConfig}";
+
+        # https://docs.lucee.org/recipes/configuration.html
         cfConfig = {
           dataSources = {
             ${project} = {
@@ -90,11 +99,11 @@
               dsn = "jdbc:sqlserver://{host}:{port}";
               id = "mssql";
               username = "username";
-              password = "\${DATASOURCE_SECRET}"; #database password must be placed in a file called `${host}.secret` eg. db.example.com.secret
-              host = "db.example.com";
-              port = "1300";
-              database = "${project}-L";
+              password = "\${DATASOURCE_SECRET}"; # database password must be placed in a file called `${host}.secret` eg. db.test.emotions.ch.secret
+              host = "db.test.example.com";
+              database = "${project}";
 
+              port = "1433";
               connectionLimit = "-1";
               connectionTimeout = "10";
               liveTimeout = "15";
@@ -106,7 +115,6 @@
               validate = "false";
               storage = "false";
               allow = "511";
-
               custom = {
                 trustServerCertificate = "true";
                 SelectMethod = "direct";
@@ -127,23 +135,41 @@
           };
         };
 
-      extensions = [ 
-         pkgs.luceeExtensions."org.lucee.mssql"
-         pkgs.luceeExtensions.image-extension
-         pkgs.luceeExtensions.compress
-      ];
+        # production config for dockerImage
+        # Inherit all database config from development except username, password, and host
+        prodCfConfig = {
+          dataSources = {
+            ${project} = (
+              cfConfig.dataSources.${project}
+              // {
+                # Override username, password, host, and port with environment variables
+                username = "\${DATABASE_USERNAME}";
+                password = "\${DATABASE_PASSWORD}";
+                host = "\${DATABASE_HOST}";
+                port = "\${DATABASE_PORT}";
+              }
+            );
+          };
+        };
 
-      # OPTIONAL: generate metadata file for https://github.com/emotions-ch/lucee-manager
-      luceeManagerJson = pkgs.writeText ".lucee-manager.json" "${builtins.toJSON {
-        project = project;
-        domain = "${project}.com";
-      }}";
+        extensions = [
+          pkgs.luceeExtensions."org.lucee.mssql"
+          pkgs.luceeExtensions.image-extension
+          pkgs.luceeExtensions.compress
+        ];
+
+        # supplies configuration for lucee-manager in local development (entirely optional but useful if one is running multiple instances)
+        # https://github.com/emotions-ch/lucee-manager/
+        luceeManagerJson = pkgs.writeText ".lucee-manager.json" "${builtins.toJSON {
+          project = project;
+          domain = "${project}.devlocal.emotions.ch";
+          nginx.templateFile = ./nginx.conf;
+        }}";
 
       in
       {
-        # Development shell
         devShells.default = pkgs.mkShell {
-          name = "lucee-nix-dev";
+          name = "${project}-nix-dev";
 
           buildInputs = with pkgs; [
             nixpkgs-fmt
@@ -169,6 +195,20 @@
           lucee = startScript;
 
           default = startScript;
+
+          # Docker image for production deployment of a masa application
+          dockerImage = pkgs.mkLuceeDockerImage {
+            inherit
+              lucee
+              extensions
+              prodCfConfig
+              project
+              ;
+            webapp = ./wwwroot;
+            isMasa = true;
+          };
         };
-      }) // { };
+      }
+    )
+    // { };
 }

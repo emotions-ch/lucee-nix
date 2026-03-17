@@ -1,14 +1,20 @@
-{ lib, pkgs, lucee-dockerfiles }:
+{
+  lib,
+  pkgs,
+  lucee-dockerfiles,
+}:
 
 let
   mkLuceeVersion =
-    { name
-    , description ? "Lucee Server Jar"
-    , version
-    , sha256 ? lib.fakeHash
-    , tomcatPackage ? pkgs.tomcat11
-    , javaVersion ? 21
-    }: pkgs.stdenv.mkDerivation {
+    {
+      name,
+      description ? "Lucee Server Jar",
+      version,
+      sha256 ? lib.fakeHash,
+      tomcatPackage ? pkgs.tomcat11,
+      javaVersion ? 21,
+    }:
+    pkgs.stdenv.mkDerivation {
       inherit version name description;
       passthru = {
         inherit tomcatPackage javaVersion;
@@ -45,10 +51,18 @@ let
     ln -s ${lucee-dockerfiles}/www $out/webapps/ROOT
   '';
 
-  mkTomcatLucee = { baseDir ? "webapps/ROOT/", port ? 8888, luceeJar, tomcatPackage ? jar.${luceeJar}.tomcatPackage }:
+  mkTomcatLucee =
+    {
+      baseDir ? "webapps/ROOT/",
+      port ? 8888,
+      luceeJar,
+      tomcatPackage ? jar.${luceeJar}.tomcatPackage,
+    }:
     let
       # Extract major version from Tomcat package version (e.g., "11.0.2" -> "11.0")
-      tomcatMajorVersion = lib.concatStringsSep "." (lib.take 2 (lib.splitString "." tomcatPackage.version));
+      tomcatMajorVersion = lib.concatStringsSep "." (
+        lib.take 2 (lib.splitString "." tomcatPackage.version)
+      );
     in
     tomcatPackage.overrideAttrs (oldAttrs: {
       name = "${oldAttrs.pname}-${oldAttrs.version}-${jar.${luceeJar}.name}-${jar.${luceeJar}.version}";
@@ -67,6 +81,12 @@ let
 
 in
 {
-  inherit mkLuceeVersion jar examplePage mkTomcatLucee lucee-dockerfiles;
+  inherit
+    mkLuceeVersion
+    jar
+    examplePage
+    mkTomcatLucee
+    lucee-dockerfiles
+    ;
   inherit mkLuceeWithTomcat9 mkLuceeWithTomcat10 mkLuceeWithTomcat11;
 }
