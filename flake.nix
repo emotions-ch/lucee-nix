@@ -4,14 +4,18 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    lucee-dockerfiles = {
+      url = "github:lucee/lucee-dockerfiles";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, lucee-dockerfiles }:
     let
       # Define overlay outside system scope to avoid circular dependency
       luceeOverlay = final: prev:
         let
-          luceeUtils = import ./lucee.nix { inherit (final) lib; pkgs = final; };
+          luceeUtils = import ./lucee.nix { inherit (final) lib; pkgs = final; inherit lucee-dockerfiles; };
           extensionUtils = import ./extensions.nix { inherit (final) lib; pkgs = final; };
 
           mkTomcatLucee = pkgs: {

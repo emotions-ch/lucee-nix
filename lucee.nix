@@ -1,13 +1,6 @@
-{ lib, pkgs }:
+{ lib, pkgs, lucee-dockerfiles }:
 
 let
-  lucee-dockerfiles = pkgs.fetchFromGitHub {
-    owner = "lucee";
-    repo = "lucee-dockerfiles";
-    rev = "0b34c46e8c1385d7c4014ee6c154476a9995189d";
-    sha256 = "sha256-tzR30emegBC27E4XImgQrOBTYOGacaXmdvCZrvjLhsg=";
-  };
-
   mkLuceeVersion =
     { name
     , description ? "Lucee Server Jar"

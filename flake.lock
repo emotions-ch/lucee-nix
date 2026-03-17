@@ -18,13 +18,29 @@
         "type": "github"
       }
     },
+    "lucee-dockerfiles": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1772492296,
+        "narHash": "sha256-9MFfEjh5tu1yma1kFoKWAWv8vj9oIoJbeIEYI/kpAec=",
+        "owner": "lucee",
+        "repo": "lucee-dockerfiles",
+        "rev": "dc7412868a677f8683c97363d3cd93b2ab6db8f8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lucee",
+        "repo": "lucee-dockerfiles",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1770197578,
-        "narHash": "sha256-AYqlWrX09+HvGs8zM6ebZ1pwUqjkfpnv8mewYwAo+iM=",
+        "lastModified": 1773646010,
+        "narHash": "sha256-iYrs97hS7p5u4lQzuNWzuALGIOdkPXvjz7bviiBjUu8=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "00c21e4c93d963c50d4c0c89bfa84ed6e0694df2",
+        "rev": "5b2c2d84341b2afb5647081c1386a80d7a8d8605",
         "type": "github"
       },
       "original": {
@@ -37,6 +53,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
+        "lucee-dockerfiles": "lucee-dockerfiles",
         "nixpkgs": "nixpkgs"
       }
     },
