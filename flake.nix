@@ -26,11 +26,27 @@
           }: luceeUtils.mkTomcatLucee {
             inherit luceeJar port baseDir tomcatPackage;
           };
+
+          mkLuceeDockerImage = {
+            lucee,
+            extensions ? [],
+            prodCfConfig,
+            project,
+            webapp,
+            isMasa ? false,
+            LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m",
+            javaPackage ? final.openjdk25,
+            tag ? "latest"
+          }: import ./docker.nix {
+            pkgs = final;
+            inherit lucee extensions prodCfConfig project webapp isMasa LUCEE_JAVA_OPTS javaPackage tag;
+          };
         in {
           # Here we pass `final` (the final pkgs set) to our generator
           mkTomcatLucee = mkTomcatLucee final;
           mkLuceeExtension = extensionUtils.mkLuceeExtension;
           luceeExtensions = extensionUtils.extensionDefinitions;
+          mkLuceeDockerImage = mkLuceeDockerImage;
         };
     in
     flake-utils.lib.eachDefaultSystem
@@ -67,15 +83,6 @@
           # Packages
           packages = {
             default = pkgs.mkTomcatLucee { };
-          };
-
-          # Checks - automated validation
-          nixosModules.default = { config, lib, pkgs, ... }: {
-            imports = [
-              ./lucee.nix
-              ./extensions.nix
-              ./systemd.nix
-            ];
           };
         }) // {
           # Expose overlay at flake level
