@@ -17,6 +17,7 @@ A Nix flake, providing declarative infrastructure for [Lucee Server](https://www
    - [Development Setup](#development-setup)
    - [Production Deployment](#production-deployment)
 5. [Advanced Topics](#advanced-topics)
+   - [lucee-manager integration](#integration-overview)
    - [CI/CD Integration](#cicd-integration)
 
 ## Architecture Overview
@@ -335,6 +336,66 @@ for a full example (Masa Project with devshell & deployment) see [flake.example.
         # Create Lucee server instance
         lucee = pkgs.mkTomcatLucee { };
 
+        startScript = pkgs.writeShellScriptBin "start-lucee" ''
+          export CATALINA_HOME=${lucee}
+          export CATALINA_BASE=./lucee-instance
+          export JAVA_HOME=${pkgs.openjdk25}
+          export CLASSPATH="$CATALINA_BASE/lib/*:$CATALINA_HOME/lib/*"
+
+          if [ ! -f "$CATALINA_BASE/conf/server.xml" ]; then
+            ${pkgs.lib.getExe initScript}
+          else
+            echo "Using existing Lucee instance at $CATALINA_BASE"
+          fi
+
+          if [ ! -f ${cfConfig.dataSources.${project}.host}.secret ]; then
+            echo "${cfConfig.dataSources.${project}.host}.secret not found!"
+          else
+            echo ""
+            echo "------ Warmup ------"
+            echo ""
+            cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
+            mkdir -p $CATALINA_BASE/lucee-server/deploy
+            cp -f ${cfConfigJSON} $CATALINA_BASE/lucee-server/deploy/.CFConfig.json
+
+            # Copy all extensions to deploy folder
+            ${pkgs.lib.concatMapStringsSep "\n            " (
+              ext: "cp -f ${ext}/*.lex $CATALINA_BASE/lucee-server/deploy/"
+            ) extensions}
+
+            LUCEE_ENABLE_WARMUP=1 $CATALINA_BASE/bin/catalina.sh run
+            echo ""
+            echo "------ Warmup complete ------"
+            echo ""
+
+            DATASOURCE_SECRET=$(cat $PWD/${
+              cfConfig.dataSources.${project}.host
+            }.secret) $CATALINA_BASE/bin/catalina.sh run
+          fi
+        '';
+
+        initScript = pkgs.writeShellScriptBin "init-lucee" ''
+          export CATALINA_HOME=${lucee}
+          export CATALINA_BASE=./lucee-instance
+
+          if [ ! -f "$CATALINA_BASE/conf/server.xml" ]; then
+            echo "Initializing Lucee instance directory at $CATALINA_BASE"
+
+            mkdir -p "$CATALINA_BASE/"
+            cp -r ${lucee}/** "$CATALINA_BASE/"
+
+            mkdir -p "$CATALINA_BASE/webapps/"
+            ln -sf "$PWD/wwwroot" $CATALINA_BASE/webapps/ROOT
+
+            chmod -R u+w "$CATALINA_BASE"
+            cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
+
+          else
+            echo "Lucee instance already exists at $CATALINA_BASE"
+            echo "Use 'start-lucee' to start the server"
+          fi
+        '';
+
         # Project configuration
         project = "myproject";
         
@@ -382,21 +443,6 @@ for a full example (Masa Project with devshell & deployment) see [flake.example.
     );
 }
 ```
-
-#### Development Scripts
-
-The development environment includes automated scripts for Lucee instance management:
-
-**Initialization Script (`init-lucee`):**
-- Creates local Lucee instance directory
-- Symlinks webapp directory to `webapps/ROOT`
-- Configures Tomcat with proper permissions
-
-**Start Script (`start-lucee`):**
-- Validates database secret files
-- Deploys extensions automatically
-- Configures CFConfig with environment substitution
-- Starts Tomcat with proper environment variables
 
 ### Production Deployment
 
@@ -468,6 +514,34 @@ docker run -d \
 ---
 
 ## Advanced Topics
+
+### Multi-Project Development with lucee-manager (highly reccomended)
+
+For development with multiple Lucee projects, [lucee-manager](https://github.com/emotions-ch/lucee-manager/) provides **reverse proxy management** and **dynamic port allocation**.
+
+#### Integration Overview
+
+The lucee-nix flake automatically integrates with lucee-manager through a configuration file:
+
+`lucee-instance/conf/lucee-manager.json`
+```nix
+# Automatic lucee-manager integration in your flake
+luceeManagerJson = pkgs.writeText "lucee-manager.json" (builtins.toJSON {
+  project = "myproject";
+  domain = "myproject.devlocal.emotions.ch"; # *.devlocal.emotions.ch resolves as 127.0.0.1
+  # Optional: Custom nginx template for special routing needs
+  nginx.templateFile = ./nginx.conf;  
+});
+```
+
+Modify your `initScript` to place the file in the right location:
+```nix
+`initScript = pkgs.writeShellScriptBin "init-lucee" ''
+    # ...
+    cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
+    # ...
+'';
+```
 
 ### CI/CD Integration
 
