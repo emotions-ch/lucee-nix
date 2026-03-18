@@ -2,17 +2,18 @@
   pkgs,
   lucee,
   extensions,
-  prodCfConfig,
+  cfConfig,
   project,
   webapp,
-  isMasa ? false,
-  LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m",
-  javaPackage ? pkgs.openjdk25,
-  tag ? "latest",
+  isMasa,
+  LUCEE_JAVA_OPTS,
+  javaPackage,
+  tag,
+  name,
 }:
 
 let
-  cfConfig = pkgs.writeText "cfconfig-prod-template.json" (builtins.toJSON prodCfConfig);
+  cfConfigJSON = pkgs.writeText "cfconfig-prod-template.json" (builtins.toJSON cfConfig);
 
   CATALINA_HOME = lucee;
   JAVA_HOME = javaPackage;
@@ -71,7 +72,7 @@ let
     ) extensions}
 
     mkdir -p /opt/lucee/webapps/health
-    cp ${cfConfig} /opt/lucee/lucee-server/deploy/.CFConfig.json
+    cp ${cfConfigJSON} /opt/lucee/lucee-server/deploy/.CFConfig.json
     cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm
     cp ${healthCheckScript} /opt/lucee/health-check.sh
     cp ${loggingProperties} /opt/lucee/conf/logging.properties
@@ -141,8 +142,7 @@ let
 
 in
 pkgs.dockerTools.buildImage {
-  inherit tag;
-  name = project;
+  inherit tag name;
 
   # Create a non-root user and run build-time setup
   runAsRoot = ''
@@ -202,9 +202,9 @@ pkgs.dockerTools.buildImage {
         "/opt/lucee/health-check.sh"
       ];
       Interval = 30000000000; # 30 seconds in nanoseconds
-      Timeout = 15000000000; # 15 seconds in nanoseconds (increased for DB operations)
+      Timeout = 15000000000; # 15 seconds in nanoseconds
       Retries = 3;
-      StartPeriod = 90000000000; # 90 seconds in nanoseconds (increased for DB warmup)
+      StartPeriod = 20000000000; # 20 seconds in nanoseconds
     };
   };
 }

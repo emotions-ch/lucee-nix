@@ -53,26 +53,28 @@
             {
               lucee,
               extensions ? [ ],
-              prodCfConfig,
+              cfConfig,
               project,
               webapp,
               isMasa ? false,
               LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m",
               javaPackage ? final.openjdk25,
               tag ? "latest",
+              name ? project,
             }:
             import ./docker.nix {
               pkgs = final;
               inherit
                 lucee
                 extensions
-                prodCfConfig
+                cfConfig
                 project
                 webapp
                 isMasa
                 LUCEE_JAVA_OPTS
                 javaPackage
                 tag
+                name
                 ;
             };
         in
