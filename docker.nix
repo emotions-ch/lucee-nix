@@ -74,7 +74,9 @@ let
 
     mkdir -p /opt/lucee/webapps/health
     cp ${cfConfigJSON} /opt/lucee/lucee-server/deploy/.CFConfig.json
-    cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm
+    ${
+      pkgs.lib.optionalString isMasa == false "cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm"
+    }
     cp ${healthCheckScript} /opt/lucee/health-check.sh
     cp ${loggingProperties} /opt/lucee/conf/logging.properties
 

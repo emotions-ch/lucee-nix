@@ -60,7 +60,7 @@ Creates a Tomcat server instance configured with Lucee Server.
 
 ```nix
 mkTomcatLucee {
-  baseDir ? "webapps/ROOT/";     # Web application base directory
+  baseDir ? "ROOT";              # Web application base directory
   port ? 8888;                   # HTTP port for development server  
   luceeJar ? "lucee7-zero";      # Lucee JAR version identifier
   tomcatPackage ? <auto>;        # Tomcat package (auto-selected based on luceeJar)
@@ -69,7 +69,7 @@ mkTomcatLucee {
 
 **Parameters:**
 
-- **`baseDir`** (string, optional): Directory containing your web application files. Defaults to `"webapps/ROOT/"`.
+- **`baseDir`** (string, optional): Directory in `webapps` containing your web application files. Defaults to `"ROOT"`.
 - **`port`** (integer, optional): HTTP port for the development server. Defaults to `8888`.
 - **`luceeJar`** (string, optional): Lucee JAR version to use. Available options:
   - `"lucee7-zero"` (default) - Lucee 7.0.1.100 without bundled extensions
@@ -86,7 +86,6 @@ mkTomcatLucee {
 ```nix
 let
   luceeServer = pkgs.mkTomcatLucee {
-    baseDir = "wwwroot";
     port = 8080;
   };
 in
@@ -306,6 +305,8 @@ imageConfig = {
 
 ## Examples & Use Cases
 
+for a full example (Masa Project with devshell & deployment) see [flake.example.nix](./examples/flake.example.nix)
+
 ### Development Setup
 
 #### Basic Development Environment
@@ -332,10 +333,7 @@ imageConfig = {
         };
 
         # Create Lucee server instance
-        lucee = pkgs.mkTomcatLucee {
-          baseDir = "wwwroot";
-          port = 8888;
-        };
+        lucee = pkgs.mkTomcatLucee { };
 
         # Project configuration
         project = "myproject";
@@ -449,7 +447,7 @@ The development environment includes automated scripts for Lucee instance manage
 }
 ```
 
-#### Container Deployment
+##### Container Deployment
 
 ```bash
 # Build and load image
@@ -466,6 +464,7 @@ docker run -d \
   -e DATABASE_PORT=5432 \
   ghcr.io/myorg/myproject:v1.0.0
 ```
+
 ---
 
 ## Advanced Topics
@@ -474,52 +473,9 @@ docker run -d \
 
 #### GitHub Actions Workflow
 
+soon ;3
+
 ```yaml
-# .github/workflows/build-and-deploy.yml
-name: Build and Deploy
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Nix
-      uses: cachix/install-nix-action@v27
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
-    
-    - name: Build Lucee application
-      run: nix build .#default
-    
-    - name: Build Docker image
-      run: nix build .#dockerImage
-    
-    - name: Load and test image
-      run: |
-        docker load < result
-        docker run -d --name test-container \
-          -e DATABASE_USERNAME=test \
-          -e DATABASE_PASSWORD=test \
-          -e DATABASE_HOST=localhost \
-          -e DATABASE_PORT=5432 \
-          $(docker images --format "table {{.Repository}}:{{.Tag}}" | tail -1)
-        
-        # Wait for health check
-        sleep 30
-        docker logs test-container
-        
-    - name: Push to Container Registry
-      if: github.ref == 'refs/heads/main'
-      run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-        docker push ghcr.io/${{ github.repository }}:latest
 ```
 
 #### Multi-Stage Deployment

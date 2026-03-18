@@ -22,9 +22,7 @@
           ];
         };
 
-        lucee = pkgs.mkTomcatLucee {
-          baseDir = "ROOT";
-        };
+        lucee = pkgs.mkTomcatLucee { };
 
         startScript = pkgs.writeShellScriptBin "start-lucee" ''
           export CATALINA_HOME=${lucee}
@@ -152,6 +150,8 @@
           };
         };
 
+        # to see all avialable extensions run:
+        # nix eval --impure --expr 'let flake = builtins.getFlake "github:emotions-ch/lucee-nix"; pkgs = import <nixpkgs> { overlays = [ flake.overlays.default ]; }; in builtins.attrNames pkgs.luceeExtensions'
         extensions = [
           pkgs.luceeExtensions."org.lucee.mssql"
           pkgs.luceeExtensions.image-extension
@@ -193,7 +193,6 @@
         };
         packages = {
           lucee = startScript;
-
           default = startScript;
 
           # Docker image for production deployment of a masa application
@@ -201,11 +200,19 @@
             inherit
               lucee
               extensions
-              prodCfConfig
               project
               ;
-            webapp = ./wwwroot;
+            webapp = ./wwwroot; # folder containing your index.cfm
             isMasa = true;
+            cfConfig = prodCfConfig;
+
+            # for GHCR integration
+            name = "ghcr.io/example/${project}";
+            imageConfig = {
+              Labels = {
+                "org.opencontainers.image.source" = "https://github.com/example/${project}";
+              };
+            };
           };
         };
       }

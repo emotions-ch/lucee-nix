@@ -35,7 +35,7 @@
           mkTomcatLucee =
             pkgs:
             {
-              baseDir ? "webapps/ROOT/",
+              baseDir ? "ROOT",
               port ? 8888,
               luceeJar ? "lucee7-zero",
               tomcatPackage ? luceeUtils.jar.lucee7-zero.tomcatPackage,
@@ -61,7 +61,7 @@
               javaPackage ? final.openjdk25,
               tag ? "latest",
               name ? project,
-              imageConfig ? { }, #pkgs.dockerTools.buildImage.config for stuff like labels
+              imageConfig ? { }, # pkgs.dockerTools.buildImage.config for stuff like labels
             }:
             import ./docker.nix {
               pkgs = final;
