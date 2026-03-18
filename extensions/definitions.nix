@@ -1,0 +1,66 @@
+{ mkLuceeExtension }:
+
+{
+  cfspreadsheet = mkLuceeExtension {
+    name = "cfspreadsheet";
+    description = "A spreadsheet extension for Lucee 5";
+    version = "3.0.4";
+    sha256 = "1cccdqa15cafi1q4xnfmq69bq7saxl84jiwjb41mjhpmji0dsnz9";
+  };
+
+  image-extension = mkLuceeExtension {
+    name = "image-extension";
+    description = "Lucee Image Extension provides essential image manipulation tags and functions (cfimage, imageCrop, imageNew, etc.) for Lucee 7+ running on Jakarta EE containers. This version requires Lucee 7 and is compatible with Tomcat 10+. For Lucee 6 installations, please use Image Extension 2.x instead.";
+    version = "3.0.0.6";
+    sha256 = "1ddi5d96iinqfzrb8f17hp0ddckas7yx2qvjqkr9pw7wh4pn0cjv";
+  };
+
+  administrator-extension = mkLuceeExtension {
+    name = "administrator-extension";
+    description = "Core Extension to integrate the Lucee Administrator into Lucee.";
+    version = "1.0.0.6";
+    sha256 = "0181pq87max0nzc3y01agxvrapmzp7nwb4mwghz9hn6nr7idqdlg";
+  };
+
+  documentation-extension = mkLuceeExtension {
+    name = "documentation-extension";
+    description = "Core Extension to integrate the Lucee Documentation into Lucee.";
+    version = "1.0.0.5";
+    sha256 = "1m69h1x4vvnsqwkrjagnizyj5cmvycg6sf1xjvqvajzngn16dw9h";
+  };
+
+  "org.postgresql.jdbc" = mkLuceeExtension {
+    name = "org.postgresql.jdbc";
+    description = "JDBC Driver for the PostgreSQL Database.";
+    version = "42.7.7";
+    sha256 = "0yd0n2ngwqf536knslpmhi3pixqnxfm0rk3jxy8abvihq9mdri4l";
+  };
+
+  s3-extension = mkLuceeExtension {
+    name = "s3-extension";
+    description = "Core Extension to integrate Amazon Simple Storage Service (S3) Resource into Lucee.";
+    version = "2.0.3.0";
+    sha256 = "1mzjss4n8f49h7cwfwhpr9v2cpcm7sa0z6gdfcpg22120bgcli6n";
+  };
+
+  "org.lucee.mssql" = mkLuceeExtension {
+    name = "org.lucee.mssql";
+    description = "JDBC Driver from Microsoft for SQL Server, SQL Server is a relational database management system developed by Microsoft.";
+    version = "13.2.1";
+    sha256 = "0wh7q4yra7i3rqxb42pcvkad219m6z7f6dsd2gqrmh93q0d8nwqf";
+  };
+
+  hibernate = mkLuceeExtension {
+    name = "hibernate.extension";
+    description = "Hibernate ORM (Hibernate in short) is an object-relational mapping library for the Java language";
+    version = "3.5.5.89";
+    sha256 = "0q0bs9slc6xfkf05dk9pbv8fr1npbbcl2qjpm9v2rx36wawk17h6";
+  };
+
+  compress = mkLuceeExtension {
+    name = "compress-extension";
+    version = "2.0.0.3";
+    description = "Compress Tags (cfzip, cfzipparam)";
+    sha256 = "1nc5r19m3gjj5mm1nnvbk1nycc1mpvxmlrk09h360nxlg64440ar";
+  };
+}

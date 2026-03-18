@@ -27,7 +27,7 @@
             pkgs = final;
             inherit lucee-dockerfiles;
           };
-          extensionUtils = import ./extensions.nix {
+          extensionUtils = import ./extensions {
             inherit (final) lib;
             pkgs = final;
           };
@@ -61,7 +61,7 @@
               javaPackage ? final.openjdk25,
               tag ? "latest",
               name ? project,
-              imageConfig ? { },
+              imageConfig ? { }, #pkgs.dockerTools.buildImage.config for stuff like labels
             }:
             import ./docker.nix {
               pkgs = final;
