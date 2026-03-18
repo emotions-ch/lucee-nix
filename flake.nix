@@ -61,6 +61,7 @@
               javaPackage ? final.openjdk25,
               tag ? "latest",
               name ? project,
+              imageConfig ? { },
             }:
             import ./docker.nix {
               pkgs = final;
@@ -75,6 +76,7 @@
                 javaPackage
                 tag
                 name
+                imageConfig
                 ;
             };
         in

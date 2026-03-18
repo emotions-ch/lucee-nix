@@ -10,6 +10,7 @@
   javaPackage,
   tag,
   name,
+  imageConfig,
 }:
 
 let
@@ -206,5 +207,6 @@ pkgs.dockerTools.buildImage {
       Retries = 3;
       StartPeriod = 20000000000; # 20 seconds in nanoseconds
     };
-  };
+  }
+  // imageConfig;
 }
