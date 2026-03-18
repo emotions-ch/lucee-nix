@@ -172,11 +172,6 @@
           name = "${project}-nix-dev";
 
           buildInputs = with pkgs; [
-            nixpkgs-fmt
-            statix
-            deadnix
-
-            jq
             openjdk25
 
             startScript
@@ -184,9 +179,6 @@
           ];
 
           shellHook = ''
-            echo "  nixpkgs-fmt         - Format Nix files"
-            echo "  statix              - Lint Nix files"
-            echo "  deadnix             - Find dead code in Nix files"
             echo "  start-lucee"
             echo ""
           '';
