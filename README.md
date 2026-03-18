@@ -24,6 +24,9 @@ A Nix flake, providing declarative infrastructure for [Lucee Server](https://www
 
 The Lucee-Nix flake provides a modern, infrastructure-as-code approach to deploying CFML applications using Nix's reproducible build system. It uses **overlay patterns** to extend nixpkgs with Lucee-specific functionality.
 
+### Prerquisites
+- [Nix](https://nixos.org/)
+
 ### Core Design Patterns
 
 - **Nix Overlays**: Extends nixpkgs without modifying core packages
@@ -536,7 +539,7 @@ luceeManagerJson = pkgs.writeText "lucee-manager.json" (builtins.toJSON {
 
 Modify your `initScript` to place the file in the right location:
 ```nix
-`initScript = pkgs.writeShellScriptBin "init-lucee" ''
+initScript = pkgs.writeShellScriptBin "init-lucee" ''
     # ...
     cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
     # ...
