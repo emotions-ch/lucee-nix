@@ -162,7 +162,7 @@
         # https://github.com/emotions-ch/lucee-manager/
         luceeManagerJson = pkgs.writeText ".lucee-manager.json" "${builtins.toJSON {
           project = project;
-          domain = "${project}.devlocal.emotions.ch"; # *.devlocal.emotions.ch resolves as 127.0.0.1
+          domain = "${project}.local";
           # nginx.templateFile = ./nginx.conf; # uncomment if you have specific needs for your reverse proxy, zb. MasaCMS Rewrite rules
         }}";
 

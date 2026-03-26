@@ -24,7 +24,7 @@ A Nix flake, providing declarative infrastructure for [Lucee Server](https://www
 
 The Lucee-Nix flake provides a modern, infrastructure-as-code approach to deploying CFML applications using Nix's reproducible build system. It uses **overlay patterns** to extend nixpkgs with Lucee-specific functionality.
 
-### Prerquisites
+### Prerequisites
 - [Nix](https://nixos.org/)
 
 ### Core Design Patterns
@@ -34,7 +34,7 @@ The Lucee-Nix flake provides a modern, infrastructure-as-code approach to deploy
 - **Declarative Configuration**: All infrastructure defined in Nix expressions
 - **Environment Inheritance**: Development configurations extend to production with selective overrides
 - **Single Mode Deployment**: Optimized for Lucee's single-mode architecture
-- **Designed for Lucee 7 zero**: Designed for use with Lucee 7 (tho any version < 5.2 should work, `cfConfig` will only apply for < 6 )
+- **Designed for Lucee 7 zero**: Designed for use with Lucee 7 (though any newer than 5.2 **should** work, `cfConfig` will only apply for Lucee 6 and newer )
 
 ### Key Components
 
@@ -269,7 +269,7 @@ LUCEE_JAVA_OPTS="-Xms256m -Xmx1024m -XX:+UseG1GC"
 
 # Optional Application Configuration  
 TZ=UTC                            # Timezone
-LUCEE_LOG_LEVEL=INFO              # Logging level
+LOG_LEVEL=INFO              # Logging level
 ```
 
 #### Environment Variable Substitution
@@ -309,192 +309,19 @@ imageConfig = {
 
 ## Examples & Use Cases
 
-for a full example (Masa Project with devshell & deployment) see [flake.example.nix](./examples/flake.example.nix)
+for a full example (Masa Project with devshell & deployment) see [full flake example](./examples/full/flake.nix)
 
 ### Development Setup
 
 #### Basic Development Environment
 
-```nix
-{
-  description = "My Lucee Project - Development";
-
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    lucee-nix = {
-      url = "github:emotions-ch/lucee-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs = { nixpkgs, flake-utils, lucee-nix, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ lucee-nix.overlays.default ];
-        };
-
-        # Create Lucee server instance
-        lucee = pkgs.mkTomcatLucee { };
-
-        startScript = pkgs.writeShellScriptBin "start-lucee" ''
-          export CATALINA_HOME=${lucee}
-          export CATALINA_BASE=./lucee-instance
-          export JAVA_HOME=${pkgs.openjdk25}
-          export CLASSPATH="$CATALINA_BASE/lib/*:$CATALINA_HOME/lib/*"
-
-          if [ ! -f "$CATALINA_BASE/conf/server.xml" ]; then
-            ${pkgs.lib.getExe initScript}
-          else
-            echo "Using existing Lucee instance at $CATALINA_BASE"
-          fi
-
-          if [ ! -f ${cfConfig.dataSources.${project}.host}.secret ]; then
-            echo "${cfConfig.dataSources.${project}.host}.secret not found!"
-          else
-            echo ""
-            echo "------ Warmup ------"
-            echo ""
-            cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
-            mkdir -p $CATALINA_BASE/lucee-server/deploy
-            cp -f ${cfConfigJSON} $CATALINA_BASE/lucee-server/deploy/.CFConfig.json
-
-            # Copy all extensions to deploy folder
-            ${pkgs.lib.concatMapStringsSep "\n            " (
-              ext: "cp -f ${ext}/*.lex $CATALINA_BASE/lucee-server/deploy/"
-            ) extensions}
-
-            LUCEE_ENABLE_WARMUP=1 $CATALINA_BASE/bin/catalina.sh run
-            echo ""
-            echo "------ Warmup complete ------"
-            echo ""
-
-            DATASOURCE_SECRET=$(cat $PWD/${
-              cfConfig.dataSources.${project}.host
-            }.secret) $CATALINA_BASE/bin/catalina.sh run
-          fi
-        '';
-
-        initScript = pkgs.writeShellScriptBin "init-lucee" ''
-          export CATALINA_HOME=${lucee}
-          export CATALINA_BASE=./lucee-instance
-
-          if [ ! -f "$CATALINA_BASE/conf/server.xml" ]; then
-            echo "Initializing Lucee instance directory at $CATALINA_BASE"
-
-            mkdir -p "$CATALINA_BASE/"
-            cp -r ${lucee}/** "$CATALINA_BASE/"
-
-            mkdir -p "$CATALINA_BASE/webapps/"
-            ln -sf "$PWD/wwwroot" $CATALINA_BASE/webapps/ROOT
-
-            chmod -R u+w "$CATALINA_BASE"
-            cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
-
-          else
-            echo "Lucee instance already exists at $CATALINA_BASE"
-            echo "Use 'start-lucee' to start the server"
-          fi
-        '';
-
-        # Project configuration
-        project = "myproject";
-        
-        # Development database configuration
-        cfConfig = {
-          dataSources.${project} = {
-            name = project;
-            class = "org.postgresql.Driver";
-            bundleName = "org.postgresql.jdbc";
-            dsn = "jdbc:postgresql://{host}:{port}/{database}";
-            username = "devuser";
-            password = "\${DATASOURCE_SECRET}";
-            host = "localhost";
-            database = project;
-            port = "5432";
-            # ... additional configuration
-          };
-        };
-
-        # Required extensions
-        extensions = with pkgs.luceeExtensions; [
-          "org.postgresql.jdbc"
-          image-extension
-          administrator-extension
-        ];
-
-      in {
-        devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            # Development tools
-            nixpkgs-fmt
-            statix
-            
-            # Runtime
-            openjdk25
-            
-            # Project scripts
-            startScript
-            initScript
-          ];
-        };
-        
-        packages.default = lucee;
-      }
-    );
-}
-```
+A basic flake for `nix develop` use only. [devshell example](./examples/devshell/flake.nix)
 
 ### Production Deployment
 
 #### Production Docker Image
 
-```nix
-{
-  # Production configuration inherits from development
-  prodCfConfig = {
-    dataSources.${project} = (
-      cfConfig.dataSources.${project} // {
-        # Override with environment variables
-        username = "\${DATABASE_USERNAME}";
-        password = "\${DATABASE_PASSWORD}";
-        host = "\${DATABASE_HOST}";
-        port = "\${DATABASE_PORT}";
-      }
-    );
-  };
-
-  # Minimal extension set for production
-  prodExtensions = with pkgs.luceeExtensions; [
-    "org.postgresql.jdbc"  # Only required extensions
-    image-extension
-  ];
-
-  # Production Docker image
-  packages.dockerImage = pkgs.mkLuceeDockerImage {
-    inherit lucee project;
-    extensions = prodExtensions;
-    cfConfig = prodCfConfig;
-    webapp = ./wwwroot;
-    
-    # Performance tuning
-    LUCEE_JAVA_OPTS = "-Xms256m -Xmx1024m -XX:+UseG1GC";
-    
-    # Container registry configuration
-    name = "ghcr.io/myorg/${project}";
-    tag = "v1.0.0";
-    
-    imageConfig = {
-      Labels = {
-        "org.opencontainers.image.source" = "https://github.com/myorg/${project}";
-        "org.opencontainers.image.description" = "My Lucee Application";
-      };
-    };
-  };
-}
-```
+A basic flake providing nothing but `dockerImage` output. [docker example](./examples/docker/flake.nix)
 
 ##### Container Deployment
 
@@ -518,7 +345,7 @@ docker run -d \
 
 ## Advanced Topics
 
-### Multi-Project Development with lucee-manager (highly reccomended)
+### Multi-Project Development with lucee-manager (highly recommended)
 
 For development with multiple Lucee projects, [lucee-manager](https://github.com/emotions-ch/lucee-manager/) provides **reverse proxy management** and **dynamic port allocation**.
 
@@ -571,7 +398,7 @@ outputs = {
       LUCEE_JAVA_OPTS = "-Xms64m -Xmx512m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005";
       
       imageConfig.Env = [
-        "LUCEE_LOG_LEVEL=DEBUG"
+        "LOG_LEVEL=DEBUG"
         "LUCEE_ENABLE_DEBUG=true"
       ];
     };
