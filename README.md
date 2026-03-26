@@ -377,9 +377,21 @@ initScript = pkgs.writeShellScriptBin "init-lucee" ''
 
 #### GitHub Actions Workflow
 
-soon ;3
+A complete CI pipeline example for Lucee applications with health checks and container registry publishing. See the [full example workflow](./examples/full/.github/workflows/ci.yml) for a complete GitHub Actions configuration.
 
-```yaml
+**Key Features:**
+- **Nix Flake Validation**: Ensures your flake configuration is valid and properly formatted
+- **Docker Build**: Builds your application container using Nix
+- **Health Checks**: Validates container startup, database connectivity, and application initialization
+- **GHCR Publishing**: Automatically publishes images to GitHub Container Registry on push
+- **Multi-Environment**: Supports different branch-based deployments (main, staging, production)
+
+**Required GitHub Secrets:**
+```bash
+DATABASE_HOST=your-db-host.com
+DATABASE_PORT=5432
+DATABASE_USERNAME=your-db-user
+DATABASE_PASSWORD=your-db-password
 ```
 
 #### Multi-Stage Deployment

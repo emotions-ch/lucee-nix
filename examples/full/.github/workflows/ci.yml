@@ -1,0 +1,257 @@
+---
+name: Build Production Image
+
+"on":
+  push:
+    branches: [main, staging, production]
+  pull_request:
+    branches: [main, staging, production]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  nix-flake-check:
+    name: Nix Flake Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Validate flake
+        run: |
+          echo "Validating Nix flake configuration & formatting..."
+          nix flake check
+          echo "✅ Flake validation passed!"
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Build Docker image
+        id: build
+        run: |
+          nix build .#dockerImage --print-build-logs
+
+          # TODO: Publish to binary cache
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: result
+          retention-days: 1
+
+  health-check-and-publish:
+    name: Health Check & Publish
+    runs-on: ubuntu-latest
+    needs: docker-build
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: |
+          echo "Loading Docker image from artifact..."
+          docker load -i result
+          echo "Docker image loaded successfully!"
+          docker images
+
+      - name: Run health check
+        env:
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        run: |
+          # Validate required environment variables
+          if [[ -z "$DATABASE_HOST" || -z "$DATABASE_PORT" || \
+                -z "$DATABASE_USERNAME" || -z "$DATABASE_PASSWORD" ]]; then
+            echo "❌ Missing required database secrets!"
+            echo "Required: DATABASE_HOST, DATABASE_PORT, DATABASE_USERNAME, DATABASE_PASSWORD"
+            exit 1
+          fi
+
+          echo "Database: $DATABASE_HOST:$DATABASE_PORT"
+
+          LOAD_OUTPUT=$(docker load < result)
+
+          echo "Starting container..."
+
+          CONTAINER_ID=$(docker run -d \
+            -p 8888:8888 \
+            -e DATABASE_HOST="$DATABASE_HOST" \
+            -e DATABASE_PORT="$DATABASE_PORT" \
+            -e DATABASE_USERNAME="$DATABASE_USERNAME" \
+            -e DATABASE_PASSWORD="$DATABASE_PASSWORD" \
+            -e TZ=UTC \
+            --name myproject-test \
+            $(echo "$LOAD_OUTPUT" | grep "Loaded image:" | sed 's/Loaded image: //'))
+
+          echo "Container ID: $CONTAINER_ID"
+
+          # Function to cleanup on exit
+          cleanup() {
+            echo "🧹 Cleaning up container..."
+            if docker ps -a | grep -q $CONTAINER_ID; then
+              docker logs $CONTAINER_ID --tail 50 || true
+              docker stop $CONTAINER_ID || true
+              docker rm $CONTAINER_ID || true
+            fi
+          }
+          trap cleanup EXIT
+
+          sleep 2
+
+          MAX_ATTEMPTS=3
+          ATTEMPT=1
+          SUCCESS=false
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' $CONTAINER_ID)
+            echo "Container health status: $HEALTH_STATUS"
+
+            if [ "$HEALTH_STATUS" = "healthy" ]; then
+              echo "✅ Health check passed! Container is healthy."
+              echo "The application successfully:"
+              echo "  - Connected to the database"
+              echo "  - Initialized Lucee server"
+              echo "  - Loaded application framework"
+              echo "  - Passed Docker health check"
+              SUCCESS=true
+              break
+            elif [ "$HEALTH_STATUS" = "starting" ]; then
+              sleep 1
+              continue
+            else
+              echo "⚠️ Health check failed on attempt $ATTEMPT - Status: $HEALTH_STATUS"
+
+              # Show some diagnostic info on failure
+              echo "Container status:"
+              docker ps | grep $CONTAINER_ID \
+                || echo "Container not found in running processes"
+
+              if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+                echo "❌ All health check attempts failed!"
+                echo "Final health status: $HEALTH_STATUS"
+                echo "Container logs (last 100 lines):"
+                docker logs $CONTAINER_ID --tail 100
+                exit 1
+              fi
+
+              echo "Retrying in $((ATTEMPT * 3)) seconds..."
+              sleep $((ATTEMPT * 3))
+              ATTEMPT=$((ATTEMPT + 1))
+            fi
+          done
+
+          if [ "$SUCCESS" = true ]; then
+            echo "🎉 Health check completed successfully!"
+            echo "The application is ready for deployment."
+          fi
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push image to GHCR
+        if: github.event_name == 'push'
+        run: |
+          echo "🚀 Publishing Docker image to GHCR..."
+
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          GHCR_IMAGE="ghcr.io/${REPO_NAME}"
+          BRANCH_TAG="${{ github.ref_name }}"
+          COMMIT_TAG="${{ github.sha }}"
+
+          # Tag all images locally first
+          docker tag "${GHCR_IMAGE}:latest" "${GHCR_IMAGE}:${BRANCH_TAG}"
+          docker tag "${GHCR_IMAGE}:latest" "${GHCR_IMAGE}:${COMMIT_TAG}"
+
+          # Build push commands for parallel execution
+          PUSH_COMMANDS="${GHCR_IMAGE}:${BRANCH_TAG} ${GHCR_IMAGE}:${COMMIT_TAG}"
+
+          if [[ "${{ github.ref_name }}" == "main" || "${{ github.ref_name }}" == "production" ]]; then
+            PUSH_COMMANDS="${PUSH_COMMANDS} ${GHCR_IMAGE}:latest"
+          fi
+
+          echo "Pushing images: $PUSH_COMMANDS"
+          for tag in $PUSH_COMMANDS; do
+            echo "Pushing $tag"
+            docker push "$tag" &
+          done
+
+          wait
+
+          echo "✅ Successfully published Docker image to GHCR!"
+          echo "Available tags:"
+          echo "  - ${GHCR_IMAGE}:${BRANCH_TAG}"
+          echo "  - ${GHCR_IMAGE}:${COMMIT_TAG}"
+          if [[ "${{ github.ref_name }}" == "main" || "${{ github.ref_name }}" == "production" ]]; then
+            echo "  - ${GHCR_IMAGE}:latest"
+          fi
+
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [nix-flake-check, docker-build, health-check-and-publish]
+    if: always()
+    steps:
+      - name: CI Results Summary
+        run: |
+          echo "## 📋 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.nix-flake-check.result }}" == "success" ]]; then
+            echo "✅ **Nix Linting**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Nix Linting**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.docker-build.result }}" == "success" ]]; then
+            echo "✅ **Docker Build**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Docker Build**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.health-check-and-publish.result }}" == "success" ]]; then
+            echo "✅ **Health Check & GHCR Publish**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.health-check-and-publish.result }}" == "skipped" ]]; then
+            echo "⏭️ **Health Check & GHCR Publish**: Skipped (PR only)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Health Check & GHCR Publish**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.nix-flake-check.result }}" == "success" && \
+                "${{ needs.docker-build.result }}" == "success" && \
+                "${{ needs.health-check-and-publish.result }}" == "success" ]]; then
+            echo "🎉 **Overall Result**: All checks passed! Ready for deployment." \
+              >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Overall Result**: Some checks failed. Please review the logs above." \
+              >> $GITHUB_STEP_SUMMARY
+          fi
