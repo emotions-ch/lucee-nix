@@ -35,9 +35,9 @@
           mkTomcatLucee =
             pkgs:
             {
+              luceeJar,
               baseDir ? "ROOT",
               port ? 8888,
-              luceeJar ? "lucee7-zero",
               tomcatPackage ? luceeUtils.jar.lucee7-zero.tomcatPackage,
             }:
             luceeUtils.mkTomcatLucee {
@@ -121,7 +121,9 @@
 
         # Packages
         packages = {
-          default = pkgs.mkTomcatLucee { };
+          default = self.packages.${system}.stable;
+
+          stable = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
         };
 
         formatter = nixpkgs.legacyPackages.${system}.nixfmt-tree;
