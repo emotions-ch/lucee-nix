@@ -124,6 +124,7 @@
           default = self.packages.${system}.stable;
 
           stable = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
+          beta = pkgs.mkTomcatLucee { luceeJar = "lucee7_1-BETA-zero"; };
         };
 
         formatter = nixpkgs.legacyPackages.${system}.nixfmt-tree;
