@@ -34,7 +34,7 @@ The Lucee-Nix flake provides a modern, infrastructure-as-code approach to deploy
 - **Declarative Configuration**: All infrastructure defined in Nix expressions
 - **Environment Inheritance**: Development configurations extend to production with selective overrides
 - **Single Mode Deployment**: Optimized for Lucee's single-mode architecture
-- **Designed for Lucee 7 zero**: Designed for use with Lucee 7 (though any newer than 5.2 **should** work, `cfConfig` will only apply for Lucee 6 and newer )
+- **Designed for Lucee 7 zero**: Designed & Tested for use with Lucee 7 (lucee 5.2 or newer may or may not work, `cfConfig` will only apply for Lucee 6 and newer)
 
 ### Key Components
 

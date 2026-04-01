@@ -97,7 +97,7 @@
               dsn = "jdbc:sqlserver://{host}:{port}";
               id = "mssql";
               username = "username";
-              password = "\${DATASOURCE_SECRET}"; # database password must be placed in a file called `${host}.secret` eg. db.test.emotions.ch.secret
+              password = "\${DATASOURCE_SECRET}"; # database password must be placed in a file called `${host}.secret` eg. db.test.example.com.secret
               host = "db.test.example.com";
               database = "${project}";
 
