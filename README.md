@@ -310,19 +310,19 @@ imageConfig = {
 
 ## Examples & Use Cases
 
-for a full example (Masa Project with devshell & deployment) see [full flake example](./examples/full/flake.nix)
+for a full example (Masa Project with devshell & deployment) see [full flake example](./doc/examples/full/flake.nix)
 
 ### Development Setup
 
 #### Basic Development Environment
 
-A basic flake for `nix develop` use only. [devshell example](./examples/devshell/flake.nix)
+A basic flake for `nix develop` use only. [devshell example](./doc/examples/devshell/flake.nix)
 
 ### Production Deployment
 
 #### Production Docker Image
 
-A basic flake providing nothing but `dockerImage` output. [docker example](./examples/docker/flake.nix)
+A basic flake providing nothing but `dockerImage` output. [docker example](./doc/examples/docker/flake.nix)
 
 ##### Container Deployment
 
@@ -378,7 +378,7 @@ initScript = pkgs.writeShellScriptBin "init-lucee" ''
 
 #### GitHub Actions Workflow
 
-A complete CI pipeline example for Lucee applications with health checks and container registry publishing. See the [full example workflow](./examples/full/.github/workflows/ci.yml) for a complete GitHub Actions configuration.
+A complete CI pipeline example for Lucee applications with health checks and container registry publishing. See the [full example workflow](./doc/examples/full/.github/workflows/ci.yml) for a complete GitHub Actions configuration.
 
 **Key Features:**
 - **Nix Flake Validation**: Ensures your flake configuration is valid and properly formatted
