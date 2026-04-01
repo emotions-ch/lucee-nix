@@ -23,6 +23,7 @@ A Nix flake, providing declarative infrastructure for [Lucee Server](https://www
 ## Architecture Overview
 
 The Lucee-Nix flake provides a modern, infrastructure-as-code approach to deploying CFML applications using Nix's reproducible build system. It uses **overlay patterns** to extend nixpkgs with Lucee-specific functionality.
+![architecture flowchart](./doc/architecture.png)
 
 ### Prerequisites
 - [Nix](https://nixos.org/)
