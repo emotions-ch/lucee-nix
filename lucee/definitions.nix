@@ -14,6 +14,14 @@
     javaVersion = 25;
   };
 
+  lucee7_0-RC-zero = mkLuceeVersion {
+    name = "lucee-zero";
+    description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
+    version = "7.0.2.106-RC";
+    sha256 = "sha256-hQnJvA4UnY6RHlg2mkWnYAfQXrPe/JJNBVQ+AJmMLZ0=";
+    javaVersion = 25;
+  };
+
   lucee7_1-BETA-zero = mkLuceeVersion {
     name = "lucee-zero";
     description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";

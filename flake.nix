@@ -124,6 +124,7 @@
           default = self.packages.${system}.stable;
 
           stable = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
+          rc = pkgs.mkTomcatLucee { luceeJar = "lucee7_0-RC-zero"; };
           beta = pkgs.mkTomcatLucee { luceeJar = "lucee7_1-BETA-zero"; };
         };
 
