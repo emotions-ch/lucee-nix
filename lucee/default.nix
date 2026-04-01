@@ -35,14 +35,11 @@ let
   mkLuceeWithTomcat10 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat10; });
   mkLuceeWithTomcat11 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat11; });
 
-  jar = {
-    lucee7-zero = mkLuceeVersion {
-      name = "lucee-zero";
-      description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
-      version = "7.0.1.100";
-      sha256 = "05xzrvjan5vpd4jzq54xp0nhiiwnk6ixn6xs45f4v2wscvkapvzd";
-      javaVersion = 25;
-    };
+  jar = import ./definitions.nix {
+    inherit mkLuceeVersion;
+    inherit mkLuceeWithTomcat11;
+    inherit mkLuceeWithTomcat10;
+    inherit mkLuceeWithTomcat9;
   };
 
   # webapp must be in directory named webapps/ROOT

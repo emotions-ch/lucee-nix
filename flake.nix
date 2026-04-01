@@ -22,7 +22,7 @@
       luceeOverlay =
         final: prev:
         let
-          luceeUtils = import ./lucee.nix {
+          luceeUtils = import ./lucee {
             inherit (final) lib;
             pkgs = final;
             inherit lucee-dockerfiles;
@@ -102,7 +102,6 @@
           name = "lucee-nix-dev";
 
           buildInputs = with pkgs; [
-            nixpkgs-fmt
             statix
             deadnix
 
