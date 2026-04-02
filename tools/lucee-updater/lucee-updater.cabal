@@ -28,6 +28,7 @@ library
     Lucee.Types
     Lucee.Fetch
     Lucee.Parse
+    Lucee.Parse.Jar
     Lucee.Hash
     Lucee.Nix
     Lucee
