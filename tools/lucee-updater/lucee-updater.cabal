@@ -33,7 +33,7 @@ library
     Lucee
   hs-source-dirs: src
   build-depends:
-    base >= 4.7 && < 5,
+    base >= 4.7,
     text >= 1.2.3.0,
     bytestring >= 0.10.8.0,
     containers >= 0.6.0.0,
@@ -55,8 +55,9 @@ executable lucee-updater
   hs-source-dirs: app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-    base >= 4.7 && < 5,
+    base >= 4.7,
     lucee-updater,
     text,
     unliftio,
-    mtl
+    mtl,
+    directory

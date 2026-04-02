@@ -9,7 +9,8 @@ module Lucee
   , defaultConfig
   ) where
 
-import Control.Monad.Except (runExceptT, throwError, liftIO)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Time (getCurrentTime)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -66,7 +67,7 @@ updateDefinitions config = do
   
   pure $ LuceeDefinitions versionsWithHashes extensions timestamp
 
--- | Update Lucee versions with pure functional approach
+-- | Update Lucee versions with pure functional approach (no hash computation)
 updateLuceeVersions :: LuceeConfig -> UpdateM [LuceeVersion]  
 updateLuceeVersions config = do
   html <- fetchDownloadPage (configBaseUrl config)
@@ -76,7 +77,7 @@ updateLuceeVersions config = do
     Right versions -> pure versions
     
   let filteredVersions = filterVersionsByConfig config allVersions
-  traverse computeHashesForVersion filteredVersions
+  pure filteredVersions -- Return without computing hashes
 
 -- | Update extensions with functional pipeline
 updateExtensions :: Text -> UpdateM [Extension]

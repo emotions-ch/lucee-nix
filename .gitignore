@@ -1,2 +1,3 @@
 result
-
+tools/*/dist-newstyle
+*.tmp

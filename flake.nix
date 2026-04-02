@@ -107,11 +107,6 @@
 
             jq
             openjdk
-            
-            # Haskell development tools
-            haskell.compiler.ghc947
-            cabal-install
-            nix-prefetch-url
           ];
 
           shellHook = ''
@@ -140,7 +135,7 @@
           update-lucee = pkgs.writeShellScriptBin "update-lucee" ''
             echo "🔄 Updating Lucee definitions with Haskell tool..."
             echo ""
-            ${self.packages.${system}.lucee-updater}/bin/lucee-updater "$@"
+            echo "y" | ${self.packages.${system}.lucee-updater}/bin/lucee-updater "$@"
           '';
         };
 

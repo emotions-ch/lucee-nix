@@ -9,11 +9,10 @@ module Lucee.Parse
 
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (mapMaybe, catMaybes)
+import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Text.HTML.TagSoup (Tag(..), parseTags, sections, partitions, (~==))
-import Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
+import Text.HTML.TagSoup (Tag(..), parseTags, sections, (~==))
 
 import Lucee.Types
 
@@ -21,44 +20,28 @@ import Lucee.Types
 parseVersions :: Text -> Either UpdateError [LuceeVersion]
 parseVersions html = 
   let tags = parseTags html
-      releaseVersions = parseVersionsByType Release tags
-      rcVersions = parseVersionsByType RC tags  
-      betaVersions = parseVersionsByType Beta tags
-  in Right $ concat [releaseVersions, rcVersions, betaVersions]
+      h2Sections = sections (~== TagOpen ("h2" :: String) []) tags
+      versions = mapMaybe parseVersionFromH2Section h2Sections
+      -- Remove duplicates by version number, keeping the first occurrence
+      uniqueVersions = removeDuplicateVersions versions
+  in Right uniqueVersions
 
--- | Pure function to parse versions of a specific type
-parseVersionsByType :: VersionType -> [Tag Text] -> [LuceeVersion]
-parseVersionsByType vtype tags =
-  let sectionTags = findVersionSection vtype tags
-      versionBlocks = partitions isVersionBlock sectionTags
-  in mapMaybe (parseVersionBlock vtype) versionBlocks
+-- | Remove duplicate versions, keeping the first occurrence
+removeDuplicateVersions :: [LuceeVersion] -> [LuceeVersion]
+removeDuplicateVersions versions = 
+  let seen = []
+      go [] acc = reverse acc
+      go (v:vs) acc = 
+        if lvVersion v `elem` map lvVersion acc
+        then go vs acc  -- Skip duplicate
+        else go vs (v:acc)  -- Keep first occurrence
+  in go versions []
 
--- | Pure function to find the section for a specific version type
-findVersionSection :: VersionType -> [Tag Text] -> [Tag Text] 
-findVersionSection vtype tags =
-  let h2Sections = sections (~== TagOpen ("h2" :: String) []) tags
-      targetSection = case vtype of
-        Release -> findSectionContaining ["Release", "Stable"] h2Sections
-        RC -> findSectionContaining ["Release Candidate", "RC"] h2Sections  
-        Beta -> findSectionContaining ["Beta"] h2Sections
-  in concat targetSection
-
--- | Pure function to find section containing target text
-findSectionContaining :: [Text] -> [[Tag Text]] -> [[Tag Text]]
-findSectionContaining targets sections = 
-  filter (any (containsAnyText targets) . take 10) sections
-
--- | Pure predicate for version blocks  
-isVersionBlock :: Tag Text -> Bool
-isVersionBlock (TagOpen "div" attrs) = 
-  any (\(name, val) -> name == "class" && "version" `T.isInfixOf` val) attrs
-isVersionBlock _ = False
-
--- | Pure function to parse a single version block
-parseVersionBlock :: VersionType -> [Tag Text] -> Maybe LuceeVersion
-parseVersionBlock vtype tags = do
-  version <- extractVersionNumber tags
-  artifacts <- extractArtifacts tags
+-- | Parse a version from an H2 section (e.g. "Release 7.0.2.106")  
+parseVersionFromH2Section :: [Tag Text] -> Maybe LuceeVersion
+parseVersionFromH2Section tags = do
+  (version, vtype) <- extractVersionFromH2Header tags
+  artifacts <- extractArtifactsFromSectionForVersion tags version
   pure $ LuceeVersion 
     { lvVersion = version
     , lvVersionType = vtype
@@ -66,7 +49,67 @@ parseVersionBlock vtype tags = do
     , lvSha256Hashes = M.empty -- Will be filled by hash computation
     }
 
--- | Pure version number extraction
+-- | Extract artifacts from the section, but only those that match the specific version
+extractArtifactsFromSectionForVersion :: [Tag Text] -> Text -> Maybe (Map ArtifactType Text)
+extractArtifactsFromSectionForVersion tags version = 
+  let links = extractDownloadLinksForVersion tags version
+      artifactMap = M.fromList $ mapMaybe classifyArtifactLink links
+  in if M.null artifactMap then Nothing else Just artifactMap
+
+-- | Extract download links that contain the specific version number
+extractDownloadLinksForVersion :: [Tag Text] -> Text -> [Text]
+extractDownloadLinksForVersion tags version = 
+  let allUrls = [url | TagOpen "a" attrs <- tags,
+                      ("href", url) <- attrs,
+                      "https://cdn.lucee.org/" `T.isPrefixOf` url]
+      -- Only keep URLs that contain the version number
+      versionUrls = filter (T.isInfixOf version) allUrls
+  in versionUrls
+
+-- | Extract version and type from H2 header text
+extractVersionFromH2Header :: [Tag Text] -> Maybe (Text, VersionType)
+extractVersionFromH2Header tags = do
+  headerText <- findH2Text tags
+  parseH2HeaderText headerText
+
+-- | Find the text content of H2 tag
+findH2Text :: [Tag Text] -> Maybe Text
+findH2Text [] = Nothing
+findH2Text (TagOpen "h2" _ : TagText text : _) = Just text
+findH2Text (_ : rest) = findH2Text rest
+
+-- | Parse H2 header text like "Release 7.0.2.106" or "Release Candidate 7.0.3.43-RC"
+parseH2HeaderText :: Text -> Maybe (Text, VersionType)
+parseH2HeaderText headerText
+  | "Release Candidate" `T.isPrefixOf` headerText = do
+      versionWithSuffix <- T.stripPrefix "Release Candidate " headerText
+      let cleanVersion = T.strip $ T.replace "-RC" "" versionWithSuffix
+      pure (cleanVersion, RC)
+  | "Release " `T.isPrefixOf` headerText = do
+      version <- T.stripPrefix "Release " headerText  
+      pure (T.strip version, Release)
+  | "Beta" `T.isPrefixOf` headerText = do
+      versionWithSuffix <- T.stripPrefix "Beta " headerText
+      let cleanVersion = T.strip $ T.replace "-BETA" "" versionWithSuffix  
+      pure (cleanVersion, Beta)
+  | otherwise = Nothing
+
+-- | Extract artifacts from the section following an H2 header
+extractArtifactsFromSection :: [Tag Text] -> Maybe (Map ArtifactType Text)
+extractArtifactsFromSection tags = 
+  let links = extractDownloadLinks tags
+      artifactMap = M.fromList $ mapMaybe classifyArtifactLink links
+  in if M.null artifactMap then Nothing else Just artifactMap
+
+-- | Extract download links from li > a tags in the current section
+extractDownloadLinks :: [Tag Text] -> [Text]
+extractDownloadLinks tags = 
+  let urls = [url | TagOpen "a" attrs <- tags,
+                   ("href", url) <- attrs,
+                   "https://cdn.lucee.org/" `T.isPrefixOf` url]
+  in urls
+
+-- | Pure version number extraction (legacy function - kept for compatibility)
 extractVersionNumber :: [Tag Text] -> Maybe Text
 extractVersionNumber tags = 
   let versionLinks = [url | TagOpen "a" attrs <- tags,
@@ -87,21 +130,21 @@ parseVersionFromUrl url
       in if T.null beforeExtension then Nothing else Just beforeExtension
   | otherwise = Nothing
 
--- | Pure artifact extraction from version block
+-- | Pure artifact extraction from version block (legacy function)
 extractArtifacts :: [Tag Text] -> Maybe (Map ArtifactType Text)
 extractArtifacts tags = 
-  let links = [(text, url) | TagOpen "a" attrs <- tags,
-                            ("href", url) <- attrs,
-                            TagText text <- tags]
-      artifactMap = M.fromList $ mapMaybe parseArtifactLink links
+  let links = [url | TagOpen "a" attrs <- tags,
+                    ("href", url) <- attrs,
+                    "https://cdn.lucee.org/" `T.isPrefixOf` url]
+      artifactMap = M.fromList $ mapMaybe classifyArtifactLink links
   in if M.null artifactMap then Nothing else Just artifactMap
 
--- | Pure artifact link parsing
-parseArtifactLink :: (Text, Text) -> Maybe (ArtifactType, Text)
-parseArtifactLink (linkText, url)
-  | "lucee-zero" `T.isInfixOf` url = Just (LuceeZero, url)
-  | "lucee-light" `T.isInfixOf` url = Just (LuceeLight, url) 
-  | "lucee.jar" `T.isInfixOf` linkText = Just (LuceeJar, url)
+-- | Classify artifact links by URL pattern
+classifyArtifactLink :: Text -> Maybe (ArtifactType, Text) 
+classifyArtifactLink url
+  | "lucee-zero-" `T.isInfixOf` url && ".jar" `T.isSuffixOf` url = Just (LuceeZero, url)
+  | "lucee-light-" `T.isInfixOf` url && ".jar" `T.isSuffixOf` url = Just (LuceeLight, url)
+  | "/lucee-" `T.isInfixOf` url && ".jar" `T.isSuffixOf` url = Just (LuceeJar, url)
   | otherwise = Nothing
 
 -- | Pure extension parsing (placeholder for comprehensive implementation)
@@ -161,13 +204,20 @@ extractExtensionDownloadUrl tags =
 -- | Pure version string parsing with validation
 parseVersionString :: Text -> Either UpdateError (Text, VersionType)
 parseVersionString input = 
-  case parseVersionType input of
+  case determineVersionType input of
     Just vtype -> 
       let cleanVersion = T.replace "-RC" "" $ T.replace "-BETA" "" input
       in if isValidVersion cleanVersion 
          then Right (cleanVersion, vtype)
          else Left (ParseError $ "Invalid version format: " <> input)
     Nothing -> Left (ParseError $ "Unknown version type: " <> input)
+
+-- | Determine version type from version string
+determineVersionType :: Text -> Maybe VersionType
+determineVersionType input
+  | "-RC" `T.isSuffixOf` input = Just RC
+  | "-BETA" `T.isSuffixOf` input = Just Beta  
+  | otherwise = Just Release -- Default to Release for numeric versions
 
 -- | Pure version validation
 isValidVersion :: Text -> Bool  
@@ -186,9 +236,3 @@ extractDownloadUrls tags =
         ("href", url) <- attrs,
         "https://cdn.lucee.org/" `T.isPrefixOf` url ||
         "https://ext.lucee.org/" `T.isPrefixOf` url]
-
--- | Pure helper: check if text contains any of the target strings
-containsAnyText :: [Text] -> Tag Text -> Bool
-containsAnyText targets (TagText text) = 
-  any (`T.isInfixOf` T.toLower text) (map T.toLower targets)
-containsAnyText _ _ = False

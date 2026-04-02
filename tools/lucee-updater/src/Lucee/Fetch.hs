@@ -9,7 +9,8 @@ module Lucee.Fetch
   ) where
 
 import Control.Exception (try)
-import Control.Monad.Except (ExceptT(..), liftIO, throwError)
+import Control.Monad.Except (ExceptT(..), throwError)
+import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T

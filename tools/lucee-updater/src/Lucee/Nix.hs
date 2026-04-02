@@ -11,7 +11,8 @@ module Lucee.Nix
   , nixFileFooter
   ) where
 
-import Control.Monad.Except (throwError, unless)
+import Control.Monad.Except (throwError)
+import Control.Monad (unless)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
@@ -36,22 +37,63 @@ generateDefinitions defs = do
 -- | Pure version definition generation
 generateVersionDefinition :: LuceeVersion -> Either UpdateError Text
 generateVersionDefinition version = do
-  sha256Hash <- case M.lookup LuceeZero (lvSha256Hashes version) of
-    Just hash -> Right hash
-    Nothing -> Left $ ValidationError $ "Missing SHA256 hash for version " <> lvVersion version
-  
-  let nixId = makeNixIdentifier (lvVersion version) (lvVersionType version)
+  -- Generate definitions for all available artifacts
+  let artifacts = M.toList $ lvSha256Hashes version
+  artifactDefs <- traverse (generateArtifactDefinition version) artifacts
+  pure $ T.unlines artifactDefs
+
+-- | Generate definition for a specific artifact type
+generateArtifactDefinition :: LuceeVersion -> (ArtifactType, Text) -> Either UpdateError Text  
+generateArtifactDefinition version (artifactType, hash) = do
+  let nixId = makeVersionNixId (lvVersion version) (lvVersionType version) artifactType
       versionStr = lvVersion version <> renderVersionType (lvVersionType version)
+      artifactName = renderArtifactName artifactType
+      description = renderArtifactDescription artifactType
       
   Right $ T.unlines
     [ "  " <> nixId <> " = mkLuceeVersion {"
-    , "    name = \"lucee-zero\";"  
-    , "    description = \"Lucee Jar file without any Extensions bundled or doc and admin bundles, \\\"Lucee zero\\\"\";"
+    , "    name = \"" <> artifactName <> "\";"  
+    , "    description = \"" <> description <> "\";"
     , "    version = \"" <> versionStr <> "\";"
-    , "    sha256 = \"" <> sha256Hash <> "\";"
+    , "    sha256 = \"" <> hash <> "\";"
     , "    javaVersion = 25;"
     , "  };"
     ]
+
+-- | Pure Nix identifier generation for versions with artifacts
+makeVersionNixId :: Text -> VersionType -> ArtifactType -> Text
+makeVersionNixId version vtype artifactType = 
+  let versionPart = sanitizeVersion version vtype
+      artifactSuffix = case artifactType of
+        LuceeZero -> "-zero"
+        LuceeLight -> "-light" 
+        LuceeJar -> ""
+  in versionPart <> artifactSuffix
+
+-- | Sanitize version for Nix identifier  
+sanitizeVersion :: Text -> VersionType -> Text
+sanitizeVersion version vtype = 
+  let majorVersion = T.take 1 version  -- e.g. "7" from "7.0.2.106"
+      minorVersion = T.take 1 (T.drop 2 version) -- e.g. "0" from "7.0.2.106"  
+  in case vtype of
+       Release -> "lucee" <> majorVersion
+       RC -> "lucee" <> majorVersion <> "_" <> minorVersion <> "-RC" 
+       Beta -> "lucee" <> majorVersion <> "_" <> minorVersion <> "-BETA"
+
+-- | Render artifact name for Nix
+renderArtifactName :: ArtifactType -> Text
+renderArtifactName LuceeZero = "lucee-zero"
+renderArtifactName LuceeLight = "lucee-light"
+renderArtifactName LuceeJar = "lucee"
+
+-- | Render artifact description
+renderArtifactDescription :: ArtifactType -> Text  
+renderArtifactDescription LuceeZero = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \\\"Lucee zero\\\""
+renderArtifactDescription LuceeLight = "Lucee Jar file without any Extensions bundled, \\\"Lucee light\\\""
+renderArtifactDescription LuceeJar = "Lucee jar file without dependencies Lucee needs to run"
+
+-- | Use hash as-is (base32 format from nix-prefetch-url)
+-- convertToSRIHash :: Text -> Text  -- Removed since we use base32 directly
 
 -- | Pure extension definition generation  
 generateExtensionDefinition :: Extension -> Either UpdateError Text

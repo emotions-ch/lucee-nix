@@ -6,6 +6,7 @@ import Control.Monad.Except (runExceptT)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess)
 import UnliftIO (liftIO)
@@ -53,18 +54,18 @@ runFullUpdate = do
         Right (luceeNix, extensionsNix) -> do
           putStrLn "📝 Generated Nix definitions"
           
-          -- Write to temporary files for review
-          T.writeFile "/tmp/lucee-definitions.nix" luceeNix
-          T.writeFile "/tmp/extensions-definitions.nix" extensionsNix
+          -- Write to temporary files for review in current directory
+          T.writeFile "lucee-definitions.nix.tmp" luceeNix
+          T.writeFile "extensions-definitions.nix.tmp" extensionsNix
           
           putStrLn ""
           putStrLn "📋 Review the generated files:"
-          putStrLn "  /tmp/lucee-definitions.nix"
-          putStrLn "  /tmp/extensions-definitions.nix"
+          putStrLn "  lucee-definitions.nix.tmp"
+          putStrLn "  extensions-definitions.nix.tmp"
           putStrLn ""
           putStrLn "🔍 Compare with current definitions:"
-          putStrLn "  diff lucee/definitions.nix /tmp/lucee-definitions.nix"
-          putStrLn "  diff extensions/definitions.nix /tmp/extensions-definitions.nix"
+          putStrLn "  diff lucee/definitions.nix lucee-definitions.nix.tmp"
+          putStrLn "  diff extensions/definitions.nix extensions-definitions.nix.tmp"
           putStrLn ""
           
           -- Interactive confirmation
@@ -73,14 +74,26 @@ runFullUpdate = do
           
           if response `elem` ["y", "Y", "yes", "Yes"]
             then do
-              -- Apply changes
-              T.writeFile "lucee/definitions.nix" luceeNix  
-              T.writeFile "extensions/definitions.nix" extensionsNix
-              putStrLn "✅ Updated definition files successfully!"
-              putStrLn ""
-              putStrLn "🧪 Test the changes:"
-              putStrLn "  nix build .#lucee7-zero"
-              exitSuccess
+              -- Check if target directories exist
+              luceeExists <- doesFileExist "lucee/definitions.nix"
+              extensionsExists <- doesFileExist "extensions/definitions.nix"
+              
+              if luceeExists && extensionsExists
+                then do
+                  -- Apply changes
+                  T.writeFile "lucee/definitions.nix" luceeNix  
+                  T.writeFile "extensions/definitions.nix" extensionsNix
+                  putStrLn "✅ Updated definition files successfully!"
+                  putStrLn ""
+                  putStrLn "🧪 Test the changes:"
+                  putStrLn "  nix build .#lucee7-zero"
+                  exitSuccess
+                else do
+                  putStrLn "❌ Error: Target directories 'lucee/' or 'extensions/' not found."
+                  putStrLn "💡 Please run from the project root directory, or copy files manually:"
+                  putStrLn "  cp lucee-definitions.nix.tmp lucee/definitions.nix"
+                  putStrLn "  cp extensions-definitions.nix.tmp extensions/definitions.nix"
+                  exitFailure
             else do
               putStrLn "❌ Changes not applied."
               exitSuccess
@@ -131,8 +144,11 @@ runDryRun = do
           putStrLn $ "  Extensions: " <> show (length $ ldExtensions definitions)
           putStrLn $ "  Nix expressions: " <> show (T.length luceeNix + T.length extensionsNix) <> " chars"
           putStrLn ""
-          putStrLn "🔍 Preview first few lines of lucee/definitions.nix:"
-          T.putStrLn $ T.unlines $ take 10 $ T.lines luceeNix
+          putStrLn "🔍 Generated lucee/definitions.nix:"
+          T.putStrLn luceeNix
+          putStrLn ""
+          putStrLn "🔍 Generated extensions/definitions.nix (first 5 lines):"
+          T.putStrLn $ T.unlines $ take 5 $ T.lines extensionsNix
           exitSuccess
 
 -- | Print version information
