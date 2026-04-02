@@ -3,7 +3,7 @@
 {
   administrator_extension = mkLuceeExtension {
     name = "administrator_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.7";
     sha256 = "sha256-/sAER5PB6IBU/FQW48NrqylgSGnHnADzECejcbeK6Zg=";
   };
@@ -12,14 +12,6 @@
   ajax_extension = mkLuceeExtension {
     name = "ajax_extension";
     description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
-    version = "1.0.0.5";
-    sha256 = "sha256-WFVve+PEDkCbdSSwmkDxukjxN5QNnsJ4G1kjr2j0T2I=";
-  };
-
-
-  ajax_extension = mkLuceeExtension {
-    name = "ajax_extension";
-    description = "Lucee Extension";
     version = "1.0.0.7";
     sha256 = "sha256-qNQTeBSYlTrnplFrBDx4DrO1cBGJQS0oWmuBTGO/5dw=";
   };
@@ -27,9 +19,9 @@
 
   argon2_extension = mkLuceeExtension {
     name = "argon2_extension";
-    description = "Lucee Extension";
-    version = "1.0.0.9";
-    sha256 = "sha256-4QhWFUUL1UXXUL30MI5y7O49FeX8tKm7UkBdWd2EV7E=";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
+    version = "1.0.0.10";
+    sha256 = "sha256-HVrvkXQXe0CVdlJ0YM9e49dMx2mw3ODR0L81BFrEZBE=";
   };
 
 
@@ -43,7 +35,7 @@
 
   chart_extension = mkLuceeExtension {
     name = "chart_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.0.0.1";
     sha256 = "sha256-zKprrFbwMAYRkWQQcfPCtb2XNYdxRjAxLMZzwUVqny8=";
   };
@@ -83,7 +75,7 @@
 
   compress_extension = mkLuceeExtension {
     name = "compress_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.0.0.3";
     sha256 = "sha256-WQFCiHm0W2AGTGBmWvu+NTDmbZhrWxtqLVK+UVPIhdk=";
   };
@@ -91,7 +83,7 @@
 
   couchbase_extension = mkLuceeExtension {
     name = "couchbase_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.37";
     sha256 = "sha256-gCnSna4tuqOGN88St8L36BnBW65dscgdnpPb3MyjA48=";
   };
@@ -99,7 +91,7 @@
 
   crypto_extension = mkLuceeExtension {
     name = "crypto_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.0-SNAPSHOT";
     sha256 = "sha256-sD/O0uvl9sSLXSQ0zy7n2wdPmdp4El68Dr72k0ga23M=";
   };
@@ -107,7 +99,7 @@
 
   debugger_extension = mkLuceeExtension {
     name = "debugger_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "3.0.0.4";
     sha256 = "sha256-roPd7kan3t+4HnsGPR/G52CpUBkSuTDuaXhLuQpAI+Y=";
   };
@@ -115,7 +107,7 @@
 
   documentation_extension = mkLuceeExtension {
     name = "documentation_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.6";
     sha256 = "sha256-V8FRLmudDuaJ3YlicvHS6VQ0vD1NkAmbUF5I7kmz6Ww=";
   };
@@ -123,7 +115,7 @@
 
   dynamodb_extension = mkLuceeExtension {
     name = "dynamodb_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.7-RC";
     sha256 = "sha256-X5ooc9QW2mCT48DWpOm8ak5CyMxvZsejm8ssgp5H9zE=";
   };
@@ -131,7 +123,7 @@
 
   ec2_extension = mkLuceeExtension {
     name = "ec2_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.5";
     sha256 = "sha256-WBSZKzlVMUg+pwe0aTjar6hAQ0VVPyz2llrnVOShFls=";
   };
@@ -139,7 +131,7 @@
 
   ehcache_extension = mkLuceeExtension {
     name = "ehcache_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.10.0.39";
     sha256 = "sha256-nTFqTOKSPmriWp4wPlNRSIFKx3fOoXFh46rz40zd0/Q=";
   };
@@ -147,7 +139,7 @@
 
   esapi_extension = mkLuceeExtension {
     name = "esapi_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "3.0.0.14";
     sha256 = "sha256-0LDQngDevbVoXsrqLzF9byndmJXhEnnAfanl9Z5OshQ=";
   };
@@ -195,7 +187,7 @@
 
   form_extension = mkLuceeExtension {
     name = "form_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.0.0.7";
     sha256 = "sha256-9fKeaO6FRMOJxNH0PY/D+q4c7Kfe1fqHRcyq7NL0kX4=";
   };
@@ -203,7 +195,7 @@
 
   git_extension = mkLuceeExtension {
     name = "git_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "4.11.0.36";
     sha256 = "sha256-tvtnjW2YOUZMznVKGgZrRoT8maSPLNRmBpWmWalhnGI=";
   };
@@ -227,7 +219,7 @@
 
   image_extension = mkLuceeExtension {
     name = "image_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "3.0.1.1";
     sha256 = "sha256-Yln6kGfQ2TTA0VWNe+5aGd7QivLZZGcrGDTXnYUFAHI=";
   };
@@ -235,7 +227,7 @@
 
   json_extension = mkLuceeExtension {
     name = "json_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.0.0.3-SNAPSHOT";
     sha256 = "sha256-nedWcdGblnFcd6wwMRW/XTyyYtaHjTNA7qLMr2MRUuM=";
   };
@@ -243,7 +235,7 @@
 
   jsonata_extension = mkLuceeExtension {
     name = "jsonata_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.0-SNAPSHOT";
     sha256 = "sha256-e9BCRfc0OVTJCpqXZpghvaLJUr283VwtsU5BBl+Y5cE=";
   };
@@ -259,7 +251,7 @@
 
   kinesis_extension = mkLuceeExtension {
     name = "kinesis_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.1.3";
     sha256 = "sha256-w7w6ySl2jR+X7buAkF/qxX1ZsCwtMthhcQLUelzY2/I=";
   };
@@ -305,14 +297,6 @@
   };
 
 
-  lucene_search = mkLuceeExtension {
-    name = "lucene_search";
-    description = "Lucee Extension";
-    version = "2.4.2.4";
-    sha256 = "sha256-kAYh0fXdXQ4GmO1mJodwKl9uhEF1sDf/ETxE7nxj+yo=";
-  };
-
-
   lucene_search_extension = mkLuceeExtension {
     name = "lucene_search_extension";
     description = "Lucee Extension";
@@ -323,7 +307,7 @@
 
   memcached_extension = mkLuceeExtension {
     name = "memcached_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "4.0.0.14";
     sha256 = "sha256-Imy7qqA11ZEceSRIOYmnNl+as7i/5nHRUk2meqT9/ts=";
   };
@@ -339,9 +323,9 @@
 
   mongodb_extension = mkLuceeExtension {
     name = "mongodb_extension";
-    description = "Lucee Extension";
-    version = "3.4.2.59";
-    sha256 = "sha256-WNIqA5z1pTJ7KoF+eqSy84P7VWDlJ05Czp0qjhfA1nQ=";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
+    version = "3.12.13.10";
+    sha256 = "sha256-2dLOQSnsryF6NSHm8Pc7YAkPifEFyOQ5BzOQeX8nnJE=";
   };
 
 
@@ -404,8 +388,8 @@
   org_lucee_exasol = mkLuceeExtension {
     name = "org_lucee_exasol";
     description = "Lucee Extension";
-    version = "7.1.20";
-    sha256 = "sha256-WBo8YVpj/GfVnUIAVh183CQebMQEglYWKJT9O6IXuDA=";
+    version = "25.2.5";
+    sha256 = "sha256-bii63PgjQN9VQ86v5ABE0EDly7jpAhmdip59dkTylO8=";
   };
 
 
@@ -420,16 +404,16 @@
   org_lucee_hsqldb = mkLuceeExtension {
     name = "org_lucee_hsqldb";
     description = "Lucee Extension";
-    version = "2.7.2.jdk8";
-    sha256 = "sha256-RdsVT+btdMd3W7//CKWWTKOX5soEXAhN6KPkjkLBgeM=";
+    version = "2.7.2.jdk11";
+    sha256 = "sha256-Pi+eAntouuQhQoKmF9oUO7RKuef+G/GQ/SP7e1KgIWY=";
   };
 
 
   org_lucee_mssql = mkLuceeExtension {
     name = "org_lucee_mssql";
     description = "Lucee Extension";
-    version = "9.4.1.jre8";
-    sha256 = "sha256-b2mDt5+YzG+hhiMv0OdNdj2qQlrTaE9Mx93Ubisz24U=";
+    version = "13.2.1";
+    sha256 = "sha256-DnOLGsAjwZrxE0034843NQXR1NzsCrI6ziMelT3BB3I=";
   };
 
 
@@ -460,14 +444,14 @@
   org_postgresql_jdbc42 = mkLuceeExtension {
     name = "org_postgresql_jdbc42";
     description = "Lucee Extension";
-    version = "9.4.1212";
-    sha256 = "sha256-Fadb0xZRvCZV7d3zRXZLqbuZBaX3miQLpAlkmSJwjXs=";
+    version = "42.1.4";
+    sha256 = "sha256-cVVt6xNG2iNDmldZ0p/MAAb6GkgYDG6gNMmxDxrIAWU=";
   };
 
 
   pdf_extension = mkLuceeExtension {
     name = "pdf_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.0.1.0";
     sha256 = "sha256-0TDI3FEDt81cYGmqILQiJGetMzT/ebhMcF5A+Lhr3N4=";
   };
@@ -475,7 +459,7 @@
 
   poi_extension = mkLuceeExtension {
     name = "poi_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.7";
     sha256 = "sha256-puRQefecYcgOcHSB6Eqc69+6VNG8KBjHwluYIL1j4hI=";
   };
@@ -491,7 +475,7 @@
 
   quartz_extension = mkLuceeExtension {
     name = "quartz_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.44-RC";
     sha256 = "sha256-7heOHnrt8sX0+tQkZzxrHVU566vUDE4pxz+cWkRdZjo=";
   };
@@ -500,14 +484,6 @@
   redis_extension = mkLuceeExtension {
     name = "redis_extension";
     description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
-    version = "3.0.0.51";
-    sha256 = "sha256-C/bH8zPf95kzfhuD1PG8wFyZ4MfgnY9vwd2w3WWJQis=";
-  };
-
-
-  redis_extension = mkLuceeExtension {
-    name = "redis_extension";
-    description = "Lucee Extension";
     version = "4.0.0.2";
     sha256 = "sha256-i+Cvr7198x535vj0XJKUD9xK4E7k3P2NSqlXR1U0dcs=";
   };
@@ -515,7 +491,7 @@
 
   s3_extension = mkLuceeExtension {
     name = "s3_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.0.3.1";
     sha256 = "sha256-6SnOn53FugffVLZ4fN94BdcLMVf21YZJgm54SDMLWNs=";
   };
@@ -539,7 +515,7 @@
 
   sentry_extension = mkLuceeExtension {
     name = "sentry_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "5.6.0.0";
     sha256 = "sha256-AQSpjFimxsNIXURsbYpManggV3Kfv6FKbQ7DtOaRGtY=";
   };
@@ -547,9 +523,17 @@
 
   tasks_extension = mkLuceeExtension {
     name = "tasks_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "1.0.0.1-SNAPSHOT";
     sha256 = "sha256-JiV8uFgRg8XdRSvTQwCyMGIvOAZhMlV/PDzWB/MdD9Y=";
+  };
+
+
+  websocket_extension = mkLuceeExtension {
+    name = "websocket_extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
+    version = "3.0.0.18";
+    sha256 = "sha256-vlHldiefrsdI4C25aft79ZCqL6Y2HY4siae2813ycPY=";
   };
 
 
@@ -561,17 +545,9 @@
   };
 
 
-  websocket_extension = mkLuceeExtension {
-    name = "websocket_extension";
-    description = "Lucee Extension";
-    version = "3.0.0.18";
-    sha256 = "sha256-vlHldiefrsdI4C25aft79ZCqL6Y2HY4siae2813ycPY=";
-  };
-
-
   yaml_extension = mkLuceeExtension {
     name = "yaml_extension";
-    description = "Lucee Extension";
+    description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";
     version = "2.5.0-BETA";
     sha256 = "sha256-pT2d9kCjhjuwXdhK1CKgYprEkdIUSBxAIFDohI6YC+s=";
   };

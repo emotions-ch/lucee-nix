@@ -136,11 +136,14 @@ groupExtensionUrls urls =
       groupedWithDedup = Map.fromListWith (++) [(sanitizeExtensionName (basicDedup name), [url]) | (name, url) <- parsedUrls]
   in groupedWithDedup
   where
-    -- Simple deduplication: remove .extension suffix if present
+    -- Enhanced deduplication: normalize extension names to remove common suffixes
     basicDedup name = 
-      if ".extension" `T.isSuffixOf` name
-        then T.dropEnd 10 name -- Remove ".extension" suffix  
-        else name
+      let lowerName = T.toLower name
+      in if ".extension" `T.isSuffixOf` lowerName
+         then T.dropEnd 10 lowerName -- Remove ".extension" suffix
+         else if "-extension" `T.isSuffixOf` lowerName  
+         then T.dropEnd 10 lowerName -- Remove "-extension" suffix
+         else lowerName
 
 
 -- | Parse all extensions from the HTML download page
@@ -206,27 +209,51 @@ parseUrlToExtension displayName description uuid url = do
 
 -- | Select best versions from extension list (prefer stable, then latest)
 selectBestVersions :: [Extension] -> [Extension]
+selectBestVersions [] = []
 selectBestVersions extensions =
-  let -- Group by version type
-      releaseVersions = filter (\e -> extVersionType e == Release) extensions
-      rcVersions = filter (\e -> extVersionType e == RC) extensions  
-      betaVersions = filter (\e -> extVersionType e == Beta) extensions
-      
-      -- Get latest from each category (sort by version string)
-      latestRelease = take 1 $ sortBy (comparing (Down . extVersion)) releaseVersions
-      latestRC = take 1 $ sortBy (comparing (Down . extVersion)) rcVersions
-      latestBeta = take 1 $ sortBy (comparing (Down . extVersion)) betaVersions
+  let -- Group by version type and sort properly within each type
+      releaseVersions = sortExtensionsByVersion $ filter (\e -> extVersionType e == Release) extensions
+      rcVersions = sortExtensionsByVersion $ filter (\e -> extVersionType e == RC) extensions  
+      betaVersions = sortExtensionsByVersion $ filter (\e -> extVersionType e == Beta) extensions
       
   in -- Return ONLY the single best version (prefer release, fallback to RC, then Beta)  
-     case latestRelease of
-       [best] -> [best]  -- Found a release version
-       [] -> case latestRC of
-         [best] -> [best]  -- No release, use RC
-         [] -> case latestBeta of
-           [best] -> [best]  -- No release/RC, use Beta
+     case releaseVersions of
+       (best:_) -> [best]  -- Found release versions, take the newest
+       [] -> case rcVersions of
+         (best:_) -> [best]  -- No release, use newest RC
+         [] -> case betaVersions of
+           (best:_) -> [best]  -- No release/RC, use newest Beta
            [] -> []  -- No versions at all
-         _ -> take 1 latestRC  -- Multiple RC versions, take first
-       _ -> take 1 latestRelease  -- Multiple release versions, take first
+
+-- | Sort extensions by version number (newest first)
+sortExtensionsByVersion :: [Extension] -> [Extension]
+sortExtensionsByVersion extensions = 
+  sortBy (comparing (Down . parseVersionForComparison . extVersion)) extensions
+  
+-- | Parse version string into comparable format
+-- This handles various version formats like "1.0.0.7", "extension-1.0.0", "jdbc-6.5.4", etc.
+parseVersionForComparison :: Text -> [Int]
+parseVersionForComparison version = 
+  let -- Clean up version string by removing common prefixes/suffixes
+      cleanVersion = T.toLower version
+      withoutPrefixes = foldl (\v prefix -> if prefix `T.isPrefixOf` v then T.drop (T.length prefix) v else v) 
+                             cleanVersion 
+                             ["extension-", "jdbc-", "light-", "zero-"]
+      withoutSuffixes = foldl (\v suffix -> if suffix `T.isSuffixOf` v then T.dropEnd (T.length suffix) v else v)
+                             withoutPrefixes
+                             ["-rc", "-beta", "-snapshot", "-alpha", ".jre8", ".jdk8", ".jdbc4", "ojdbc11", ".0001l"]
+      -- Extract numeric parts separated by dots, dashes, or other separators
+      numericParts = T.splitOn "." $ T.replace "-" "." withoutSuffixes
+      -- Convert each part to integer, defaulting to 0 for non-numeric parts
+      parsedParts = map parseVersionPart numericParts
+  in if null parsedParts then [0] else parsedParts
+  
+-- | Parse individual version part, extracting numeric value
+parseVersionPart :: Text -> Int
+parseVersionPart part = 
+  case T.unpack $ T.takeWhile (\c -> c >= '0' && c <= '9') part of
+    "" -> 0
+    numStr -> read numStr
 
 -- | Find the main extensions section in the HTML
 findExtensionsSection :: [Tag Text] -> [Tag Text]
