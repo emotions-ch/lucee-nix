@@ -97,7 +97,7 @@
         };
       in
       {
-        # Development shell
+         # Development shell
         devShells.default = pkgs.mkShell {
           name = "lucee-nix-dev";
 
@@ -107,12 +107,18 @@
 
             jq
             openjdk
+            
+            # Haskell development tools
+            haskell.compiler.ghc947
+            cabal-install
+            nix-prefetch-url
           ];
 
           shellHook = ''
             echo "  nixpkgs-fmt         - Format Nix files"
             echo "  statix              - Lint Nix files"
             echo "  deadnix             - Find dead code in Nix files"
+            echo "  nix run .#lucee-updater - Update Lucee definitions"
             echo ""
           '';
         };
@@ -126,6 +132,16 @@
           stable = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
           rc = pkgs.mkTomcatLucee { luceeJar = "lucee7_0-RC-zero"; };
           beta = pkgs.mkTomcatLucee { luceeJar = "lucee7_1-BETA-zero"; };
+          
+          # Lucee definitions updater
+          lucee-updater = pkgs.haskellPackages.callCabal2nix "lucee-updater" ./tools/lucee-updater {};
+          
+          # Convenience script for updating definitions
+          update-lucee = pkgs.writeShellScriptBin "update-lucee" ''
+            echo "🔄 Updating Lucee definitions with Haskell tool..."
+            echo ""
+            ${self.packages.${system}.lucee-updater}/bin/lucee-updater "$@"
+          '';
         };
 
         formatter = nixpkgs.legacyPackages.${system}.nixfmt-tree;
