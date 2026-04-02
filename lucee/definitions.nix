@@ -1,5 +1,5 @@
 # Lucee Definitions - Auto-generated
-# Generated at: 2026-04-02 08:35:02 UTC
+# Generated at: 2026-04-02 10:26:22 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 {
@@ -135,8 +135,6 @@
     sha256 = "sha256-zdGU5JzvJsGCrq7uOLOcdjkp6h8RDfvnW6u+ipEjqR0=";
     javaVersion = 25;
   };
-
-
 
 
 

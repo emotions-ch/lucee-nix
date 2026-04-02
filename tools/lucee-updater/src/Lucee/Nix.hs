@@ -21,18 +21,16 @@ import Data.Time (UTCTime, formatTime, defaultTimeLocale)
 
 import Lucee.Types
 
--- | Pure function to generate complete Nix definitions
+-- | Pure function to generate Lucee version definitions only
 generateDefinitions :: LuceeDefinitions -> Either UpdateError Text  
 generateDefinitions defs = do
   versionDefs <- traverse generateVersionDefinition (ldVersions defs)
-  extensionDefs <- traverse generateExtensionDefinition (ldExtensions defs)
   
   let header = nixFileHeader (ldGeneratedAt defs)
       versions = T.unlines versionDefs
-      extensions = T.unlines extensionDefs  
       footer = nixFileFooter
       
-  pure $ T.unlines [header, "", versions, "", extensions, "", footer]
+  pure $ T.unlines [header, "", versions, "", footer]
 
 -- | Pure version definition generation
 generateVersionDefinition :: LuceeVersion -> Either UpdateError Text
@@ -98,20 +96,20 @@ renderArtifactDescription LuceeJar = "Lucee jar file without dependencies Lucee 
 -- | Pure extension definition generation  
 generateExtensionDefinition :: Extension -> Either UpdateError Text
 generateExtensionDefinition ext = do
-  sha256Hash <- case extSha256Hash ext of
-    Just hash -> Right hash
-    Nothing -> Left $ ValidationError $ "Missing SHA256 hash for extension " <> extName ext
-    
-  let nixId = makeExtensionNixId (extName ext)
-      
-  Right $ T.unlines  
-    [ "  " <> nixId <> " = mkLuceeExtension {"
-    , "    name = \"" <> extName ext <> "\";"
-    , "    description = \"" <> escapeNixString (extDescription ext) <> "\";"
-    , "    version = \"" <> extVersion ext <> "\";" 
-    , "    sha256 = \"" <> sha256Hash <> "\";"
-    , "  };"
-    ]
+  case extSha256Hash ext of
+    Nothing -> Right "" -- Skip extensions without valid hashes
+    Just sha256Hash -> do
+      let nixId = makeExtensionNixId (extName ext)
+          
+      Right $ T.unlines  
+        [ "  " <> nixId <> " = mkLuceeExtension {"
+        , "    name = \"" <> extName ext <> "\";"
+        , "    description = \"" <> escapeNixString (extDescription ext) <> "\";"
+        , "    version = \"" <> extVersion ext <> "\";" 
+        , "    sha256 = \"" <> sha256Hash <> "\";"
+        , "  };"
+        , ""
+        ]
 
 -- | Pure Nix file rendering with proper structure
 renderNixFile :: Text -> Text -> Text -> Text

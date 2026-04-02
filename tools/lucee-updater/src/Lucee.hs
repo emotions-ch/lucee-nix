@@ -18,8 +18,8 @@ import qualified Data.Text as T
 import Lucee.Types
 import Lucee.Fetch (fetchDownloadPage)
 import Lucee.Parse (parseVersions, parseExtensions)
-import Lucee.Hash (computeHashesForVersion)
-import Lucee.Nix (generateDefinitions)
+import Lucee.Hash (computeHashesForVersion, computeHashesForExtensions)
+import Lucee.Nix (generateDefinitions, generateExtensionDefinition, nixFileFooter)
 
 -- | Configuration for the update process
 data LuceeConfig = LuceeConfig
@@ -86,9 +86,10 @@ updateExtensions html = do
     Left err -> throwError err
     Right exts -> pure exts
     
-  -- For now, return basic extensions
-  -- In full implementation, would compute hashes for each
-  pure $ take 20 extensions -- Limit for initial implementation
+  -- Compute hashes for extensions
+  extensionsWithHashes <- computeHashesForExtensions extensions
+  
+  pure extensionsWithHashes
 
 -- | Generate updated definition files  
 generateUpdatedFiles :: LuceeDefinitions -> UpdateM (Text, Text)
@@ -115,27 +116,23 @@ shouldIncludeVersion config version =
     RC -> configTrackRCs config  
     Beta -> configTrackBetas config
 
--- | Pure extension definitions generation (placeholder)
+-- | Generate extension definitions using proper Lucee.Nix logic
 generateExtensionsNix :: [Extension] -> Text
-generateExtensionsNix extensions = T.unlines
-  [ "{ mkLuceeExtension }:"
-  , ""
-  , "{"
-  , T.unlines $ map renderExtensionPlaceholder extensions
-  , "}"
-  ]
-
--- | Pure extension placeholder rendering
-renderExtensionPlaceholder :: Extension -> Text
-renderExtensionPlaceholder ext = T.unlines
-  [ "  " <> sanitizeName (extName ext) <> " = mkLuceeExtension {"
-  , "    name = \"" <> extName ext <> "\";"
-  , "    version = \"" <> extVersion ext <> "\";"  
-  , "    description = \"" <> T.take 100 (extDescription ext) <> "\";"
-  , "    # sha256 = \"...\"; # TODO: Compute hash"
-  , "  };"
-  ]
-
--- | Pure name sanitization
-sanitizeName :: Text -> Text  
-sanitizeName = T.map (\c -> if c == '-' || c == '.' then '_' else c)
+generateExtensionsNix extensions = 
+  case traverse generateExtensionDefinition extensions of
+    Left err -> T.unlines
+      [ "{ mkLuceeExtension }:"
+      , ""
+      , "{"
+      , "  # Error generating extensions: " <> T.pack (show err)
+      , "}"
+      ]
+    Right extensionDefs -> 
+      let nonEmptyDefs = filter (not . T.null . T.strip) extensionDefs
+      in T.unlines
+        [ "{ mkLuceeExtension }:"
+        , ""
+        , "{"
+        , T.unlines nonEmptyDefs
+        , nixFileFooter
+        ]

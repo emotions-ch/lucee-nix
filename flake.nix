@@ -127,15 +127,16 @@
           stable = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
           rc = pkgs.mkTomcatLucee { luceeJar = "lucee7_0-RC-zero"; };
           beta = pkgs.mkTomcatLucee { luceeJar = "lucee7_1-BETA-zero"; };
+
+          lucee-extensions = pkgs.luceeExtensions;
           
           # Lucee definitions updater
           lucee-updater = pkgs.haskellPackages.callCabal2nix "lucee-updater" ./tools/lucee-updater {};
-          
-          # Convenience script for updating definitions
           update-lucee = pkgs.writeShellScriptBin "update-lucee" ''
             echo "🔄 Updating Lucee definitions with Haskell tool..."
             echo ""
             echo "y" | ${self.packages.${system}.lucee-updater}/bin/lucee-updater "$@"
+            rm ./*.tmp
           '';
         };
 

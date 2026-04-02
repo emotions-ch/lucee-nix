@@ -48,11 +48,15 @@ data ArtifactType
 
 -- | Extension information
 data Extension = Extension
-  { extName :: Text
-  , extVersion :: Text  
-  , extDescription :: Text
-  , extDownloadUrl :: Text
-  , extSha256Hash :: Maybe Text
+  { extName :: Text                 -- ^ Extension name for Nix identifier
+  , extDisplayName :: Text          -- ^ Human-readable extension name  
+  , extVersion :: Text              -- ^ Extension version
+  , extVersionType :: VersionType   -- ^ Version type (Release, RC, Beta)
+  , extDescription :: Text          -- ^ Extension description
+  , extDownloadUrl :: Text          -- ^ Download URL for .lex file
+  , extUuid :: Text                 -- ^ Unique extension UUID
+  , extMinLuceeVersion :: Maybe Text -- ^ Minimum required Lucee version
+  , extSha256Hash :: Maybe Text     -- ^ SHA256 hash for verification
   } deriving stock (Show, Eq, Generic)
 
 -- | Complete definitions for Nix generation

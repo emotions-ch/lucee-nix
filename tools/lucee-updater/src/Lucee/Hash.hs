@@ -5,13 +5,15 @@ module Lucee.Hash
   ( computeHash
   , computeHashesForVersion
   , computeHashesParallel
+  , computeHashesForExtension
+  , computeHashesForExtensions
   , validateHash
   ) where
 
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Exception (try)
 import System.IO.Error (IOError)
-import Control.Monad.Except (ExceptT(..), throwError)
+import Control.Monad.Except (ExceptT(..), throwError, catchError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -117,6 +119,35 @@ isValidNixBase32Char :: Char -> Bool
 isValidNixBase32Char c = 
   (c >= 'a' && c <= 'z') || 
   (c >= '0' && c <= '9')
+
+-- | Compute SHA256 hash for a single extension (IO boundary)
+computeHashesForExtension :: Extension -> UpdateM Extension
+computeHashesForExtension extension = do
+  -- Check if URL looks like a valid .lex file URL
+  let url = extDownloadUrl extension
+  if isValidExtensionUrl url
+    then do
+      -- Try to compute hash, but catch and handle errors gracefully
+      hashResult <- (computeHash url >>= pure . Just) `catchError` (\_ -> do
+        liftIO $ putStrLn $ "⚠️  Skipping hash for " <> T.unpack (extName extension) <> " due to hash computation error: " <> T.unpack url
+        pure Nothing)
+      pure $ extension { extSha256Hash = hashResult }
+    else do
+      -- Skip non-.lex URLs (likely documentation links)
+      liftIO $ putStrLn $ "⚠️  Skipping invalid extension URL for " <> T.unpack (extName extension) <> ": " <> T.unpack url
+      pure $ extension { extSha256Hash = Nothing }
+
+-- | Check if URL looks like a valid extension download URL
+isValidExtensionUrl :: Text -> Bool
+isValidExtensionUrl url = 
+  T.isSuffixOf ".lex" url && 
+  ("https://ext.lucee.org/" `T.isPrefixOf` url || "https://download.lucee.org/" `T.isPrefixOf` url)
+
+-- | Compute hashes for multiple extensions in parallel (IO boundary)
+computeHashesForExtensions :: [Extension] -> UpdateM [Extension]
+computeHashesForExtensions extensions = do
+  -- Use sequential processing to avoid overwhelming the server
+  traverse computeHashesForExtension extensions
 
 -- | Pure hash validation for consistency (accepts both base32 and SRI format)
 validateHash :: Text -> Either UpdateError Text
