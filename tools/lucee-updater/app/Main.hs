@@ -69,7 +69,7 @@ runFullUpdate = do
           putStrLn ""
           
           -- Interactive confirmation
-          putStr "Apply changes? [y/N]: "
+          putStrLn "Apply changes? [y/N]: "
           response <- getLine
           
           if response `elem` ["y", "Y", "yes", "Yes"]
