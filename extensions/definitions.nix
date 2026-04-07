@@ -1,6 +1,11 @@
+# Lucee Extensions Definitions - Auto-generated
+# Generated at: 2026-04-07 12:21:05 UTC
+# DO NOT EDIT MANUALLY - Use lucee-updater tool
+
 { mkLuceeExtension }:
 
 {
+
   administrator_extension = mkLuceeExtension {
     name = "administrator_extension";
     description = "A lightweight extension that provides built-in Ajax functionality for Lucee Server applications. Enables seamless asynchronous communication between client-side JavaScript and server-side CFML, featur";

@@ -7,6 +7,7 @@ module Lucee.Nix
   , generateExtensionDefinition
   , renderNixFile
   , nixFileHeader
+  , nixExtensionsFileHeader
   , nixFileFooter
   ) where
 
@@ -110,6 +111,18 @@ nixFileHeader timestamp = T.unlines
   , "  mkLuceeWithTomcat10," 
   , "  mkLuceeWithTomcat9,"
   , "}:"
+  , ""
+  , "{"
+  ]
+
+-- | Pure Nix file header generation for extensions
+nixExtensionsFileHeader :: UTCTime -> Text
+nixExtensionsFileHeader timestamp = T.unlines
+  [ "# Lucee Extensions Definitions - Auto-generated"
+  , "# Generated at: " <> T.pack (formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S UTC" timestamp)
+  , "# DO NOT EDIT MANUALLY - Use lucee-updater tool"
+  , ""
+  , "{ mkLuceeExtension }:"
   , ""
   , "{"
   ]

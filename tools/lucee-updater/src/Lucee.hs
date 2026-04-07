@@ -12,7 +12,7 @@ module Lucee
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad.Except (throwError, runExceptT)
 import Control.Monad.IO.Class (liftIO)
-import Data.Time (getCurrentTime)
+import Data.Time (getCurrentTime, UTCTime)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -20,7 +20,7 @@ import Lucee.Types
 import Lucee.Fetch (fetchDownloadPage)
 import Lucee.Parse (parseVersions, parseExtensions)
 import Lucee.Hash (computeHashesForVersion, computeHashesForExtensions)
-import Lucee.Nix (generateDefinitions, generateExtensionDefinition, nixFileFooter)
+import Lucee.Nix (generateDefinitions, generateExtensionDefinition, nixFileFooter, nixExtensionsFileHeader)
 
 -- | Configuration for the update process
 data LuceeConfig = LuceeConfig
@@ -106,8 +106,8 @@ generateUpdatedFiles defs = do
     Left err -> throwError err
     Right nix -> pure nix
     
-  -- Generate extension definitions (placeholder)
-  let extensionsNix = generateExtensionsNix (ldExtensions defs)
+  -- Generate extension definitions with timestamp
+  let extensionsNix = generateExtensionsNix (ldGeneratedAt defs) (ldExtensions defs)
   
   pure (luceeNix, extensionsNix)
 
@@ -124,22 +124,16 @@ shouldIncludeVersion config version =
     Beta -> configTrackBetas config
 
 -- | Generate extension definitions using proper Lucee.Nix logic
-generateExtensionsNix :: [Extension] -> Text
-generateExtensionsNix extensions = 
+generateExtensionsNix :: UTCTime -> [Extension] -> Text
+generateExtensionsNix timestamp extensions = 
   case traverse generateExtensionDefinition extensions of
     Left err -> T.unlines
-      [ "{ mkLuceeExtension }:"
-      , ""
-      , "{"
+      [ nixExtensionsFileHeader timestamp
       , "  # Error generating extensions: " <> T.pack (show err)
-      , "}"
+      , nixFileFooter
       ]
     Right extensionDefs -> 
       let nonEmptyDefs = filter (not . T.null . T.strip) extensionDefs
-      in T.unlines
-        [ "{ mkLuceeExtension }:"
-        , ""
-        , "{"
-        , T.unlines nonEmptyDefs
-        , nixFileFooter
-        ]
+          header = nixExtensionsFileHeader timestamp
+          content = T.unlines nonEmptyDefs
+      in T.unlines [header, content, nixFileFooter]
