@@ -1,12 +1,12 @@
 # Lucee Definitions - Auto-generated
-# Generated at: 2026-04-07 12:39:13 UTC
+# Generated at: 2026-04-07 13:08:03 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
-{ mkLuceeVersion
-, mkLuceeWithTomcat11
-, mkLuceeWithTomcat10
-, mkLuceeWithTomcat9
-,
+{
+  mkLuceeVersion,
+  mkLuceeWithTomcat11,
+  mkLuceeWithTomcat10,
+  mkLuceeWithTomcat9,
 }:
 
 {
