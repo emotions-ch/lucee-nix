@@ -1,50 +1,50 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lucee.Parse.Extension.Html
-  ( findExtensionContainerByName
-  , extractMetadataFromContainer
-  , parseUrlToExtension
-  , findExtensionsSection
-  , findExtensionContainers
-  , parseExtensionSection
-  , extractExtensionMetadata
-  , extractExtensionName
-  , extractExtensionUuid
-  , extractExtensionDescription
-  , extractVersionSections
-  , extractVersionsFromSection
-  , findVersionEntries
-  , determineVersionTypeFromHeader
-  , parseVersionEntry
-  , extractVersionInfo
-  , parseMinLuceeVersion
-  ) where
+  ( findExtensionContainerByName,
+    extractMetadataFromContainer,
+    parseUrlToExtension,
+    findExtensionsSection,
+    findExtensionContainers,
+    parseExtensionSection,
+    extractExtensionMetadata,
+    extractExtensionName,
+    extractExtensionUuid,
+    extractExtensionDescription,
+    extractVersionSections,
+    extractVersionsFromSection,
+    findVersionEntries,
+    determineVersionTypeFromHeader,
+    parseVersionEntry,
+    extractVersionInfo,
+    parseMinLuceeVersion,
+  )
+where
 
 import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Text.HTML.TagSoup (Tag(..), sections, (~==))
-
-import Lucee.Types
 import Lucee.Constants
-import Lucee.Parse.Common (parseVersionFromUrl, extractFirstUrl)
+import Lucee.Parse.Common (extractFirstUrl, parseVersionFromUrl)
 import Lucee.Parse.Extension.Url (parseExtensionFromUrl, sanitizeExtensionName)
+import Lucee.Types
+import Text.HTML.TagSoup (Tag (..), sections, (~==))
 
 -- | Find HTML container for specific extension name with improved matching
 findExtensionContainerByName :: Text -> [Tag Text] -> Maybe [Tag Text]
-findExtensionContainerByName targetName tags = 
+findExtensionContainerByName targetName tags =
   let extSection = findExtensionsSection tags
       containers = findAllContainers extSection
       matchingContainers = filter (containerMatchesNameStrict targetName) containers
-  in case matchingContainers of
-        (container:_) -> Just container
-        [] -> Nothing  -- Return Nothing to force unique description creation
+   in case matchingContainers of
+        (container : _) -> Just container
+        [] -> Nothing -- Return Nothing to force unique description creation
   where
-    findAllContainers section = 
+    findAllContainers section =
       sections (~== TagOpen ("div" :: String) [("class", "container")]) section
-    
+
     -- Much stricter matching to prevent cross-contamination
-    containerMatchesNameStrict target container = 
+    containerMatchesNameStrict target container =
       let urls = extractUrlsFromContainer container
           -- Require that ALL URLs in container match the target extension
           allMatches = map (urlMatchesNameExactly target) urls
@@ -55,48 +55,48 @@ findExtensionContainerByName targetName tags =
           namesMatch = case containerName of
             Just name -> sanitizeExtensionName name == sanitizeExtensionName target
             Nothing -> False
-      in allUrlsMatch && namesMatch
-    
-    extractUrlsFromContainer container = 
+       in allUrlsMatch && namesMatch
+
+    extractUrlsFromContainer container =
       [url | TagOpen "a" attrs <- container, ("href", url) <- attrs, lexExtension `T.isSuffixOf` url]
-    
+
     -- Extract extension name directly from this container's title
-    extractExtensionNameFromContainer container = 
+    extractExtensionNameFromContainer container =
       extractExtensionName container
-    
+
     -- More precise URL matching - fix the cross-contamination issue
-    urlMatchesNameExactly target url = 
+    urlMatchesNameExactly target url =
       let fileName = T.takeWhileEnd (/= '/') url
           baseName = T.dropEnd lexExtensionLength fileName
           -- Extract the extension name from the URL with better parsing
           urlExtensionName = case T.splitOn "-" baseName of
-            (name:_) -> sanitizeExtensionName name  -- Use the same sanitization as the target
+            (name : _) -> sanitizeExtensionName name -- Use the same sanitization as the target
             [] -> ""
           sanitizedTarget = sanitizeExtensionName target
-      in urlExtensionName == sanitizedTarget
+       in urlExtensionName == sanitizedTarget
 
 -- | Extract metadata from HTML container with better isolation
 extractMetadataFromContainer :: Text -> Maybe [Tag Text] -> (Text, Text, Text)
-extractMetadataFromContainer fallbackName Nothing = 
+extractMetadataFromContainer fallbackName Nothing =
   -- No container found - use safe defaults
   (fallbackName, defaultExtensionDescription, "")
-extractMetadataFromContainer fallbackName (Just container) = 
+extractMetadataFromContainer fallbackName (Just container) =
   -- Container found - extract metadata from THIS specific container
   let displayName = extractDisplayNameSafely fallbackName container
       description = extractDescriptionSafely container
       uuid = extractUuidSafely container
-  in (displayName, description, uuid)
+   in (displayName, description, uuid)
   where
     extractDisplayNameSafely fallback container =
       case extractExtensionName container of
         Just name -> name
         Nothing -> fallback
-    
-    extractDescriptionSafely container = 
+
+    extractDescriptionSafely container =
       case extractExtensionDescription container of
         Just desc -> desc
         Nothing -> defaultExtensionDescription
-    
+
     extractUuidSafely container =
       case extractExtensionUuid container of
         Just uuid -> uuid
@@ -106,37 +106,37 @@ extractMetadataFromContainer fallbackName (Just container) =
 parseUrlToExtension :: Text -> Text -> Text -> Text -> Maybe Extension
 parseUrlToExtension displayName description uuid url = do
   (name, version, versionType) <- parseExtensionFromUrl url
-  let sanitizedName = sanitizeExtensionName name  -- Use parsed name from URL, not displayName from HTML
-  
-  pure $ Extension
-    { extName = sanitizedName
-    , extDisplayName = displayName
-    , extVersion = version
-    , extVersionType = versionType
-    , extDescription = description
-    , extDownloadUrl = url
-    , extUuid = uuid
-    , extMinLuceeVersion = Nothing -- Will be extracted from container if available
-    , extSha256Hash = Nothing
-    }
+  let sanitizedName = sanitizeExtensionName name -- Use parsed name from URL, not displayName from HTML
+  pure $
+    Extension
+      { extName = sanitizedName,
+        extDisplayName = displayName,
+        extVersion = version,
+        extVersionType = versionType,
+        extDescription = description,
+        extDownloadUrl = url,
+        extUuid = uuid,
+        extMinLuceeVersion = Nothing, -- Will be extracted from container if available
+        extSha256Hash = Nothing
+      }
 
 -- | Find the main extensions section in the HTML
 findExtensionsSection :: [Tag Text] -> [Tag Text]
-findExtensionsSection tags = 
+findExtensionsSection tags =
   let sections = dropWhile (not . isExtensionsSectionStart) tags
-  in takeWhile (not . isExtensionsSectionEnd) sections
+   in takeWhile (not . isExtensionsSectionEnd) sections
   where
     isExtensionsSectionStart (TagOpen "div" attrs) = ("id", "ext") `elem` attrs
     isExtensionsSectionStart _ = False
-    
-    isExtensionsSectionEnd (TagOpen "div" attrs) = 
+
+    isExtensionsSectionEnd (TagOpen "div" attrs) =
       any (\(_, v) -> "footer" `T.isInfixOf` v) attrs
     isExtensionsSectionEnd _ = False
 
 -- | Find individual extension containers within the extensions section
 -- This function is now used by findExtensionContainerByName for metadata extraction
 findExtensionContainers :: [Tag Text] -> [[Tag Text]]
-findExtensionContainers tags = 
+findExtensionContainers tags =
   sections (~== TagOpen ("div" :: String) [("class", "container")]) tags
 
 -- | Parse a single extension container into multiple Extension records (one per version)
@@ -144,14 +144,14 @@ parseExtensionSection :: [Tag Text] -> Maybe Extension
 parseExtensionSection tags = do
   (displayName, uuid) <- extractExtensionMetadata tags
   description <- extractExtensionDescription tags
-  
+
   -- Extract all versions from all version sections
   let versionSections = extractVersionSections tags
       allVersions = concatMap (extractVersionsFromSection displayName uuid description) versionSections
-  
+
   -- Return the first stable version found, or first version if no stable
   case filter isStableVersion allVersions ++ allVersions of
-    (ext:_) -> Just ext
+    (ext : _) -> Just ext
     [] -> Nothing
   where
     isStableVersion ext = extVersionType ext == Release
@@ -165,7 +165,7 @@ extractExtensionMetadata tags = do
 
 -- | Extract extension display name from the title
 extractExtensionName :: [Tag Text] -> Maybe Text
-extractExtensionName tags = 
+extractExtensionName tags =
   case findTitleText tags of
     Just title -> Just $ T.strip $ T.replace "Extension" "" title
     Nothing -> Nothing
@@ -177,29 +177,30 @@ extractExtensionName tags =
 
 -- | Extract extension UUID from permalink ID
 extractExtensionUuid :: [Tag Text] -> Maybe Text
-extractExtensionUuid tags = 
+extractExtensionUuid tags =
   case findPermalinkId tags of
     Just uuid -> Just $ T.strip uuid
     Nothing -> Nothing
   where
     findPermalinkId [] = Nothing
     findPermalinkId (TagOpen "div" attrs : _)
-      | ("class", "permalinkHover") `elem` attrs = 
+      | ("class", "permalinkHover") `elem` attrs =
           lookup "id" attrs
     findPermalinkId (_ : rest) = findPermalinkId rest
 
 -- | Extract extension description from the container with improved parsing
 extractExtensionDescription :: [Tag Text] -> Maybe Text
-extractExtensionDescription tags = 
+extractExtensionDescription tags =
   case findDescriptionText tags of
-    Just desc -> 
+    Just desc ->
       let cleaned = T.strip desc
           -- Smart truncation that respects word boundaries
-          truncated = if T.length cleaned <= maxDescriptionLength
-                     then cleaned
-                     else T.take maxDescriptionLength cleaned <> "..."
-      in Just truncated
-    Nothing -> Nothing  -- Return Nothing so caller can decide on fallback
+          truncated =
+            if T.length cleaned <= maxDescriptionLength
+              then cleaned
+              else T.take maxDescriptionLength cleaned <> "..."
+       in Just truncated
+    Nothing -> Nothing -- Return Nothing so caller can decide on fallback
   where
     findDescriptionText [] = Nothing
     -- Try multiple CSS patterns for description
@@ -217,54 +218,53 @@ extractExtensionDescription tags =
 
 -- | Extract version sections (Releases, RCs/Betas, Snapshots)
 extractVersionSections :: [Tag Text] -> [[Tag Text]]
-extractVersionSections tags = 
+extractVersionSections tags =
   let versionColumns = sections (~== TagOpen ("div" :: String) []) tags
-  in filter hasVersionContent versionColumns
+   in filter hasVersionContent versionColumns
   where
-    hasVersionContent column = 
+    hasVersionContent column =
       any isVersionHeader column && any isVersionEntry column
-    
-    isVersionHeader (TagText text) = 
-      "Releases" `T.isInfixOf` text || 
-      "RCs" `T.isInfixOf` text || 
-      "Betas" `T.isInfixOf` text ||
-      "Snapshots" `T.isInfixOf` text
+
+    isVersionHeader (TagText text) =
+      "Releases" `T.isInfixOf` text
+        || "RCs" `T.isInfixOf` text
+        || "Betas" `T.isInfixOf` text
+        || "Snapshots" `T.isInfixOf` text
     isVersionHeader _ = False
-    
-    isVersionEntry (TagOpen "a" attrs) = 
+
+    isVersionEntry (TagOpen "a" attrs) =
       any (\(_, url) -> luceeExtensionBaseUrl `T.isPrefixOf` url && lexExtension `T.isSuffixOf` url) attrs
     isVersionEntry _ = False
 
 -- | Extract versions from a single version section
 extractVersionsFromSection :: Text -> Text -> Text -> [Tag Text] -> [Extension]
-extractVersionsFromSection displayName uuid description tags = 
+extractVersionsFromSection displayName uuid description tags =
   let versionEntries = findVersionEntries tags
       versionType = determineVersionTypeFromHeader tags
-  in mapMaybe (parseVersionEntry displayName uuid description versionType) versionEntries
+   in mapMaybe (parseVersionEntry displayName uuid description versionType) versionEntries
 
 -- | Find version entries (download links) in a version section
 findVersionEntries :: [Tag Text] -> [[Tag Text]]
-findVersionEntries tags = 
+findVersionEntries tags =
   let linkSections = sections (~== TagOpen ("a" :: String) []) tags
-  in filter hasLexDownload linkSections
+   in filter hasLexDownload linkSections
   where
-    hasLexDownload section = 
+    hasLexDownload section =
       any isLexLink section
-    
-    isLexLink (TagOpen "a" attrs) = 
+
+    isLexLink (TagOpen "a" attrs) =
       any (\(_, url) -> luceeExtensionBaseUrl `T.isPrefixOf` url && lexExtension `T.isSuffixOf` url) attrs
     isLexLink _ = False
 
 -- | Determine version type from section header
 determineVersionTypeFromHeader :: [Tag Text] -> VersionType
-determineVersionTypeFromHeader tags = 
+determineVersionTypeFromHeader tags =
   case findHeaderText tags of
     Just header
       | "Releases" `T.isInfixOf` header -> Release
       | "RCs" `T.isInfixOf` header || "Betas" `T.isInfixOf` header -> RC -- Treat both as RC for simplicity
       | "Snapshots" `T.isInfixOf` header -> Beta -- Map Snapshots to Beta for now
     _ -> Release -- Default fallback
-
   where
     findHeaderText [] = Nothing
     findHeaderText (TagText text : _)
@@ -276,18 +276,19 @@ parseVersionEntry :: Text -> Text -> Text -> VersionType -> [Tag Text] -> Maybe 
 parseVersionEntry displayName uuid description versionType tags = do
   (downloadUrl, version, minLuceeVersion) <- extractVersionInfo tags
   let name = sanitizeExtensionName displayName
-  
-  pure $ Extension
-    { extName = name
-    , extDisplayName = displayName
-    , extVersion = version
-    , extVersionType = versionType
-    , extDescription = description
-    , extDownloadUrl = downloadUrl
-    , extUuid = uuid
-    , extMinLuceeVersion = minLuceeVersion
-    , extSha256Hash = Nothing
-    }
+
+  pure $
+    Extension
+      { extName = name,
+        extDisplayName = displayName,
+        extVersion = version,
+        extVersionType = versionType,
+        extDescription = description,
+        extDownloadUrl = downloadUrl,
+        extUuid = uuid,
+        extMinLuceeVersion = minLuceeVersion,
+        extSha256Hash = Nothing
+      }
 
 -- | Extract version information from version entry tags
 extractVersionInfo :: [Tag Text] -> Maybe (Text, Text, Maybe Text)
@@ -299,12 +300,12 @@ extractVersionInfo tags = do
 
 -- | Parse minimum Lucee version from title attribute
 parseMinLuceeVersion :: [Tag Text] -> Maybe Text
-parseMinLuceeVersion tags = 
+parseMinLuceeVersion tags =
   case [title | TagOpen "a" attrs <- tags, ("title", title) <- attrs] of
-    (title:_) -> extractLuceeVersionFromTitle title
+    (title : _) -> extractLuceeVersionFromTitle title
     [] -> Nothing
   where
     extractLuceeVersionFromTitle title
-      | "Requires Lucee " `T.isPrefixOf` title = 
+      | "Requires Lucee " `T.isPrefixOf` title =
           Just $ T.takeWhile (/= ' ') $ T.drop (T.length "Requires Lucee ") title
       | otherwise = Nothing

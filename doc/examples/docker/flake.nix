@@ -11,11 +11,10 @@
   };
 
   outputs =
-    {
-      nixpkgs,
-      flake-utils,
-      lucee-nix,
-      ...
+    { nixpkgs
+    , flake-utils
+    , lucee-nix
+    , ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:

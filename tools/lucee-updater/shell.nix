@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
@@ -10,7 +10,7 @@ pkgs.mkShell {
     # For development
     haskellPackages.ghcid
   ];
-  
+
   shellHook = ''
     echo "Lucee Updater Development Environment"
     echo "Commands:"

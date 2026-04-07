@@ -2,11 +2,11 @@
 
 let
   mkLuceeExtension =
-    {
-      name,
-      description ? "Lucee Extension",
-      version,
-      sha256 ? lib.fakeHash,
+    { name
+    , description ? "Lucee Extension"
+    , version
+    , sha256 ? lib.fakeHash
+    ,
     }:
     pkgs.stdenv.mkDerivation {
       inherit version name description;

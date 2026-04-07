@@ -1,3 +1,3 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 
-pkgs.haskellPackages.callCabal2nix "lucee-updater" ./. {}
+pkgs.haskellPackages.callCabal2nix "lucee-updater" ./. { }

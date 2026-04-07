@@ -1,16 +1,16 @@
-{
-  pkgs,
-  lucee,
-  extensions,
-  cfConfig,
-  project,
-  webapp,
-  isMasa,
-  LUCEE_JAVA_OPTS,
-  javaPackage,
-  tag,
-  name,
-  imageConfig,
+{ pkgs
+, lucee
+, extensions
+, cfConfig
+, project
+, webapp
+, isMasa
+, LUCEE_JAVA_OPTS
+, javaPackage
+, tag
+, name
+, imageConfig
+,
 }:
 
 let

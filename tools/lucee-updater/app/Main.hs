@@ -6,58 +6,55 @@ import Control.Monad.Except (runExceptT)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Lucee
+import Lucee.Types (ArtifactType (..), LuceeDefinitions (..), LuceeVersion (..), UpdateError (..), VersionType (..), renderVersionType)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess)
 import UnliftIO (liftIO)
 
-import Lucee
-import Lucee.Types (UpdateError(..), LuceeVersion(..), LuceeDefinitions(..), VersionType(..), ArtifactType(..), renderVersionType)
-
 -- | Main application entry point
 main :: IO ()
 main = do
   args <- getArgs
-  
+
   case args of
     [] -> runFullUpdate
     ["--help"] -> printHelp
-    ["--versions-only"] -> runVersionsOnly  
+    ["--versions-only"] -> runVersionsOnly
     ["--dry-run"] -> runDryRun
     _ -> do
       putStrLn "Invalid arguments. Use --help for usage information."
       exitFailure
 
--- | Run full update process (semi-automated)  
+-- | Run full update process (semi-automated)
 runFullUpdate :: IO ()
 runFullUpdate = do
   putStrLn "🔄 Fetching latest Lucee definitions..."
-  
+
   result <- runExceptT $ updateDefinitions defaultConfig
-  
+
   case result of
     Left err -> do
       putStrLn $ "❌ Error: " <> show err
       exitFailure
-      
     Right definitions -> do
       putStrLn "✅ Successfully fetched Lucee data"
-      
+
       -- Generate Nix files
       nixResult <- runExceptT $ generateUpdatedFiles definitions
-      
+
       case nixResult of
-        Left err -> do  
+        Left err -> do
           putStrLn $ "❌ Nix generation error: " <> show err
           exitFailure
-          
         Right (luceeNix, extensionsNix) -> do
           putStrLn "📝 Generated Nix definitions"
-          
+
           -- Write to temporary files for review in current directory
           T.writeFile "lucee-definitions.nix.tmp" luceeNix
           T.writeFile "extensions-definitions.nix.tmp" extensionsNix
-          
+
           putStrLn ""
           putStrLn "📋 Review the generated files:"
           putStrLn "  lucee-definitions.nix.tmp"
@@ -67,21 +64,21 @@ runFullUpdate = do
           putStrLn "  diff lucee/definitions.nix lucee-definitions.nix.tmp"
           putStrLn "  diff extensions/definitions.nix extensions-definitions.nix.tmp"
           putStrLn ""
-          
+
           -- Interactive confirmation
           putStrLn "Apply changes? [y/N]: "
           response <- getLine
-          
+
           if response `elem` ["y", "Y", "yes", "Yes"]
             then do
               -- Check if target directories exist
               luceeExists <- doesFileExist "lucee/definitions.nix"
               extensionsExists <- doesFileExist "extensions/definitions.nix"
-              
+
               if luceeExists && extensionsExists
                 then do
                   -- Apply changes
-                  T.writeFile "lucee/definitions.nix" luceeNix  
+                  T.writeFile "lucee/definitions.nix" luceeNix
                   T.writeFile "extensions/definitions.nix" extensionsNix
                   putStrLn "✅ Updated definition files successfully!"
                   putStrLn ""
@@ -102,40 +99,37 @@ runFullUpdate = do
 runVersionsOnly :: IO ()
 runVersionsOnly = do
   putStrLn "🔄 Fetching Lucee versions only..."
-  
-  let config = defaultConfig { configIncludeExtensions = False }
+
+  let config = defaultConfig {configIncludeExtensions = False}
   result <- runExceptT $ updateLuceeVersions config
-  
+
   case result of
     Left err -> do
-      putStrLn $ "❌ Error: " <> show err  
+      putStrLn $ "❌ Error: " <> show err
       exitFailure
-      
     Right versions -> do
       putStrLn $ "✅ Found " <> show (length versions) <> " versions:"
       mapM_ printVersionInfo versions
       exitSuccess
 
 -- | Run dry-run mode (no file changes)
-runDryRun :: IO ()  
+runDryRun :: IO ()
 runDryRun = do
   putStrLn "🔍 Dry run mode - no files will be modified"
-  
+
   result <- runExceptT $ updateDefinitions defaultConfig
-  
+
   case result of
     Left err -> do
       putStrLn $ "❌ Error: " <> show err
       exitFailure
-      
     Right definitions -> do
       nixResult <- runExceptT $ generateUpdatedFiles definitions
-      
+
       case nixResult of
         Left err -> do
           putStrLn $ "❌ Generation error: " <> show err
           exitFailure
-          
         Right (luceeNix, extensionsNix) -> do
           putStrLn "✅ Generated definitions successfully"
           putStrLn ""
@@ -156,10 +150,10 @@ printVersionInfo :: LuceeVersion -> IO ()
 printVersionInfo version = do
   let versionStr = lvVersion version <> renderVersionType (lvVersionType version)
       typeStr = show (lvVersionType version)
-      artifactCount = show $ length $ lvArtifacts version  
+      artifactCount = show $ length $ lvArtifacts version
   putStrLn $ "  📦 " <> T.unpack versionStr <> " (" <> typeStr <> ") - " <> artifactCount <> " artifacts"
 
--- | Print help information  
+-- | Print help information
 printHelp :: IO ()
 printHelp = do
   putStrLn "Lucee Definitions Updater"
@@ -167,7 +161,7 @@ printHelp = do
   putStrLn "Usage:"
   putStrLn "  lucee-updater                  Run full semi-automated update"
   putStrLn "  lucee-updater --versions-only  Show available versions only"
-  putStrLn "  lucee-updater --dry-run        Preview changes without applying"  
+  putStrLn "  lucee-updater --dry-run        Preview changes without applying"
   putStrLn "  lucee-updater --help          Show this help"
   putStrLn ""
   putStrLn "The tool maintains functional purity by:"

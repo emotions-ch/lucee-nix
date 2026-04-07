@@ -1,18 +1,18 @@
-{
-  lib,
-  pkgs,
-  lucee-dockerfiles,
+{ lib
+, pkgs
+, lucee-dockerfiles
+,
 }:
 
 let
   mkLuceeVersion =
-    {
-      name,
-      description ? "Lucee Server Jar",
-      version,
-      sha256 ? lib.fakeHash,
-      tomcatPackage ? pkgs.tomcat11,
-      javaVersion ? 21,
+    { name
+    , description ? "Lucee Server Jar"
+    , version
+    , sha256 ? lib.fakeHash
+    , tomcatPackage ? pkgs.tomcat11
+    , javaVersion ? 21
+    ,
     }:
     pkgs.stdenv.mkDerivation {
       inherit version name description;
@@ -49,11 +49,11 @@ let
   '';
 
   mkTomcatLucee =
-    {
-      baseDir ? "webapps/ROOT/",
-      port ? 8888,
-      luceeJar,
-      tomcatPackage ? jar.${luceeJar}.tomcatPackage,
+    { baseDir ? "webapps/ROOT/"
+    , port ? 8888
+    , luceeJar
+    , tomcatPackage ? jar.${luceeJar}.tomcatPackage
+    ,
     }:
     let
       # Extract major version from Tomcat package version (e.g., "11.0.2" -> "11.0")
