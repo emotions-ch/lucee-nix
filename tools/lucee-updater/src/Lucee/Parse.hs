@@ -16,6 +16,8 @@ import Text.HTML.TagSoup (Tag(..), parseTags, sections, (~==))
 import Lucee.Types
 import qualified Lucee.Parse.Jar as Jar
 import qualified Lucee.Parse.Lex as Lex
+import Lucee.Parse.Common (extractDownloadUrls)
+import Lucee.Validation (isValidVersion, isNumericPart)
 
 -- | Re-export jar parsing function for compatibility
 parseVersions :: Text -> Either UpdateError [LuceeVersion]
@@ -43,20 +45,7 @@ determineVersionType input
   | "-BETA" `T.isSuffixOf` input = Just Beta  
   | otherwise = Just Release -- Default to Release for numeric versions
 
--- | Pure version validation
-isValidVersion :: Text -> Bool  
-isValidVersion version = 
-  let parts = T.splitOn "." version
-  in length parts >= 3 && all isNumericPart parts
-
--- | Pure numeric part validation
-isNumericPart :: Text -> Bool
-isNumericPart part = not (T.null part) && T.all (\c -> c >= '0' && c <= '9') part
-
--- | Pure URL extraction for download links
-extractDownloadUrls :: [Tag Text] -> [Text]
-extractDownloadUrls tags = 
-  [url | TagOpen "a" attrs <- tags,
-        ("href", url) <- attrs,
-        "https://cdn.lucee.org/" `T.isPrefixOf` url ||
-        "https://ext.lucee.org/" `T.isPrefixOf` url]
+-- | Pure version type checking
+isVersionType :: VersionType -> Text -> Bool
+isVersionType targetType version = 
+  parseVersionType version == Just targetType

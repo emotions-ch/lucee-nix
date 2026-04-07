@@ -2,22 +2,12 @@
 
 module Lucee.Parse.Lex
   ( parseExtensions
-  , parseExtensionSection
-  , extractExtensionMetadata
-  , extractVersionSections
-  , parseVersionEntry
-  , extractExtensionName
-  , extractExtensionUuid
-  , extractExtensionDescription
-  , sanitizeExtensionName
-  , makeExtensionDownloadUrl
-  , parseMinLuceeVersion
-  , classifyExtensionVersion
-  -- New functions for comprehensive URL-based parsing
-  , extractAllLexUrls
   , parseExtensionFromUrl
-  , findExtensionContainerByName
   , groupExtensionUrls
+  , selectBestVersions
+  , extractExtensionMetadata
+  , parseMinLuceeVersion
+  , findExtensionContainerByName
   ) where
 
 import Data.Maybe (mapMaybe, catMaybes)
@@ -31,16 +21,9 @@ import Text.HTML.TagSoup (Tag(..), parseTags, sections, (~==), (~/=))
 import Text.Regex.TDFA ((=~), getAllTextMatches)
 
 import Lucee.Types
-import Lucee.Parse.Common (parseVersionFromUrl)
+import Lucee.Parse.Common (parseVersionFromUrl, extractAllLexUrls, extractFirstUrl)
 
 -- | Extract all .lex URLs from HTML using regex
-extractAllLexUrls :: Text -> [Text]
-extractAllLexUrls html = 
-  let pattern = "https://ext\\.lucee\\.org/[^\"]*\\.lex" :: String
-      htmlString = T.unpack html
-      allMatches = getAllTextMatches (htmlString =~ pattern) :: [String]
-  in map T.pack allMatches
-
 -- | Parse extension name and version from .lex URL
 parseExtensionFromUrl :: Text -> Maybe (Text, Text, VersionType)
 parseExtensionFromUrl url = do
@@ -413,18 +396,12 @@ parseVersionEntry displayName uuid description versionType tags = do
 -- | Extract version information from version entry tags
 extractVersionInfo :: [Tag Text] -> Maybe (Text, Text, Maybe Text)
 extractVersionInfo tags = do
-  downloadUrl <- extractDownloadUrl tags
+  downloadUrl <- extractFirstUrl tags
   version <- parseVersionFromUrl downloadUrl
   let minLuceeVersion = parseMinLuceeVersion tags
   pure (downloadUrl, version, minLuceeVersion)
 
 -- | Extract download URL from version entry
-extractDownloadUrl :: [Tag Text] -> Maybe Text
-extractDownloadUrl tags = 
-  case [url | TagOpen "a" attrs <- tags, ("href", url) <- attrs] of
-    (url:_) -> Just url
-    [] -> Nothing
-
 -- | Parse minimum Lucee version from title attribute
 parseMinLuceeVersion :: [Tag Text] -> Maybe Text
 parseMinLuceeVersion tags = 

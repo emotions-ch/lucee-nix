@@ -6,11 +6,9 @@ module Lucee.Parse.Jar
   , extractVersionFromH2Header
   , parseH2HeaderText
   , extractArtifactsFromSectionForVersion
-  , extractDownloadLinksForVersion
   , classifyArtifactLink
   , extractArtifacts
   , extractArtifactsFromSection
-  , extractDownloadLinks
   , extractVersionNumber
   , removeDuplicateVersions
   , findH2Text
@@ -24,7 +22,7 @@ import qualified Data.Text as T
 import Text.HTML.TagSoup (Tag(..), parseTags, sections, (~==))
 
 import Lucee.Types
-import Lucee.Parse.Common (parseVersionFromUrl)
+import Lucee.Parse.Common (parseVersionFromUrl, extractVersionFilteredUrls, extractLuceeJarUrls)
 
 -- | Pure function to parse all Lucee jar versions from HTML
 parseVersions :: Text -> Either UpdateError [LuceeVersion]
@@ -62,19 +60,9 @@ parseVersionFromH2Section tags = do
 -- | Extract Lucee jar artifacts from the section, but only those that match the specific version
 extractArtifactsFromSectionForVersion :: [Tag Text] -> Text -> Maybe (Map ArtifactType Text)
 extractArtifactsFromSectionForVersion tags version = 
-  let links = extractDownloadLinksForVersion tags version
+  let links = extractVersionFilteredUrls version tags
       artifactMap = M.fromList $ mapMaybe classifyArtifactLink links
   in if M.null artifactMap then Nothing else Just artifactMap
-
--- | Extract Lucee jar download links that contain the specific version number
-extractDownloadLinksForVersion :: [Tag Text] -> Text -> [Text]
-extractDownloadLinksForVersion tags version = 
-  let allUrls = [url | TagOpen "a" attrs <- tags,
-                      ("href", url) <- attrs,
-                      "https://cdn.lucee.org/" `T.isPrefixOf` url]
-      -- Only keep URLs that contain the version number
-      versionUrls = filter (T.isInfixOf version) allUrls
-  in versionUrls
 
 -- | Extract version and type from H2 header text for Lucee jars
 extractVersionFromH2Header :: [Tag Text] -> Maybe (Text, VersionType)
@@ -107,17 +95,9 @@ parseH2HeaderText headerText
 -- | Extract Lucee jar artifacts from the section following an H2 header
 extractArtifactsFromSection :: [Tag Text] -> Maybe (Map ArtifactType Text)
 extractArtifactsFromSection tags = 
-  let links = extractDownloadLinks tags
+  let links = extractLuceeJarUrls tags
       artifactMap = M.fromList $ mapMaybe classifyArtifactLink links
   in if M.null artifactMap then Nothing else Just artifactMap
-
--- | Extract Lucee jar download links from li > a tags in the current section
-extractDownloadLinks :: [Tag Text] -> [Text]
-extractDownloadLinks tags = 
-  let urls = [url | TagOpen "a" attrs <- tags,
-                   ("href", url) <- attrs,
-                   "https://cdn.lucee.org/" `T.isPrefixOf` url]
-  in urls
 
 -- | Pure version number extraction from Lucee jar links (legacy function - kept for compatibility)
 extractVersionNumber :: [Tag Text] -> Maybe Text

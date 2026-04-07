@@ -6,7 +6,6 @@ module Lucee.Nix
   , generateVersionDefinition  
   , generateExtensionDefinition
   , renderNixFile
-  , validateNixSyntax
   , nixFileHeader
   , nixFileFooter
   ) where
@@ -20,6 +19,7 @@ import qualified Data.Text as T
 import Data.Time (UTCTime, formatTime, defaultTimeLocale)
 
 import Lucee.Types
+import Lucee.Validation (isValidNixChar, validateNixSyntax)
 
 -- | Pure function to generate Lucee version definitions only
 generateDefinitions :: LuceeDefinitions -> Either UpdateError Text  
@@ -116,21 +116,6 @@ renderNixFile :: Text -> Text -> Text -> Text
 renderNixFile header content footer = 
   T.unlines [header, "", content, "", footer]
 
--- | Pure Nix syntax validation (basic checks)
-validateNixSyntax :: Text -> Either UpdateError ()
-validateNixSyntax nixContent = do
-  -- Basic structural validation
-  unless (hasBalancedBraces nixContent) $ 
-    throwError $ ValidationError "Unbalanced braces in Nix expression"
-    
-  unless (hasValidStrings nixContent) $
-    throwError $ ValidationError "Invalid string literals in Nix expression"
-    
-  unless (hasValidIdentifiers nixContent) $
-    throwError $ ValidationError "Invalid Nix identifiers"
-    
-  pure ()
-
 -- | Pure Nix file header generation
 nixFileHeader :: UTCTime -> Text
 nixFileHeader timestamp = T.unlines
@@ -167,15 +152,6 @@ sanitizeChar c
   | c == '-' = '_'
   | c == '.' = '_'  
   | otherwise = '_'
-
--- | Pure Nix character validation
-isValidNixChar :: Char -> Bool
-isValidNixChar c = 
-  (c >= 'a' && c <= 'z') || 
-  (c >= 'A' && c <= 'Z') || 
-  (c >= '0' && c <= '9') || 
-  c == '_'
-
 -- | Pure string escaping for Nix
 escapeNixString :: Text -> Text
 escapeNixString = T.concatMap escapeChar
@@ -185,43 +161,3 @@ escapeNixString = T.concatMap escapeChar
     escapeChar '\n' = "\\n"
     escapeChar '\t' = "\\t"  
     escapeChar c = T.singleton c
-
--- | Pure balanced braces validation
-hasBalancedBraces :: Text -> Bool
-hasBalancedBraces text = checkBalance 0 (T.unpack text)
-  where
-    checkBalance :: Int -> String -> Bool
-    checkBalance 0 [] = True
-    checkBalance n [] = n == 0
-    checkBalance n ('{':cs) = checkBalance (n + 1) cs
-    checkBalance n ('}':cs) = n > 0 && checkBalance (n - 1) cs
-    checkBalance n (_:cs) = checkBalance n cs
-
--- | Pure string literal validation
-hasValidStrings :: Text -> Bool  
-hasValidStrings text = checkStrings False (T.unpack text)
-  where
-    checkStrings :: Bool -> String -> Bool
-    checkStrings False [] = True
-    checkStrings True [] = False -- Unclosed string
-    checkStrings inString ('"':cs) = checkStrings (not inString) cs
-    checkStrings inString ('\\':_:cs) = checkStrings inString cs -- Escaped char
-    checkStrings inString (_:cs) = checkStrings inString cs
-
--- | Pure identifier validation 
-hasValidIdentifiers :: Text -> Bool
-hasValidIdentifiers text = 
-  let identifiers = extractIdentifiers text
-  in all isValidIdentifier identifiers
-
--- | Pure identifier extraction (simplified)
-extractIdentifiers :: Text -> [Text]
-extractIdentifiers text = 
-  T.words $ T.filter (\c -> isValidNixChar c || c == ' ') text
-
--- | Pure identifier validation
-isValidIdentifier :: Text -> Bool  
-isValidIdentifier ident = 
-  not (T.null ident) && 
-  T.all isValidNixChar ident &&
-  not (T.head ident >= '0' && T.head ident <= '9') -- Can't start with digit

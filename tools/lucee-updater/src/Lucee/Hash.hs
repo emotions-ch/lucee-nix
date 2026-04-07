@@ -7,7 +7,6 @@ module Lucee.Hash
   , computeHashesParallel
   , computeHashesForExtension
   , computeHashesForExtensions
-  , validateHash
   ) where
 
 import Control.Concurrent.Async (mapConcurrently)
@@ -24,6 +23,7 @@ import qualified Data.ByteString.Lazy as BL
 import System.Process.Typed (proc, readProcessStdout_, ExitCode(..))
 
 import Lucee.Types
+import Lucee.Validation (isValidSha256, validateHash, isValidExtensionUrl)
 
 -- | Compute SHA256 hash using nix-prefetch-url and convert to SRI format (IO boundary)
 computeHash :: Text -> UpdateM Text
@@ -95,31 +95,6 @@ computeHashesParallel artifacts = do
                       else pure $ Left $ ValidationError $ "Invalid SRI hash for " <> url <> ": " <> sriHash
              else pure $ Left $ ValidationError $ "Invalid base32 hash for " <> url
 
--- | Pure SHA256 validation (supports both old and new Nix hash formats)
-isValidSha256 :: Text -> Bool
-isValidSha256 hash 
-  | T.length hash == 52 && "sha256-" `T.isPrefixOf` hash = 
-      -- New SRI format: "sha256-" + 43 chars base64
-      T.all isValidBase64Char (T.drop 7 hash)
-  | T.length hash == 52 = 
-      -- Old Nix format: 52 chars base32 
-      T.all isValidNixBase32Char hash
-  | otherwise = False
-
--- | Pure base64 character validation  
-isValidBase64Char :: Char -> Bool
-isValidBase64Char c = 
-  (c >= 'A' && c <= 'Z') || 
-  (c >= 'a' && c <= 'z') || 
-  (c >= '0' && c <= '9') || 
-  c == '+' || c == '/' || c == '='
-
--- | Pure Nix base32 hash character validation
-isValidNixBase32Char :: Char -> Bool  
-isValidNixBase32Char c = 
-  (c >= 'a' && c <= 'z') || 
-  (c >= '0' && c <= '9')
-
 -- | Compute SHA256 hash for a single extension (IO boundary)
 computeHashesForExtension :: Extension -> UpdateM Extension
 computeHashesForExtension extension = do
@@ -137,25 +112,8 @@ computeHashesForExtension extension = do
       liftIO $ putStrLn $ "⚠️  Skipping invalid extension URL for " <> T.unpack (extName extension) <> ": " <> T.unpack url
       pure $ extension { extSha256Hash = Nothing }
 
--- | Check if URL looks like a valid extension download URL
-isValidExtensionUrl :: Text -> Bool
-isValidExtensionUrl url = 
-  T.isSuffixOf ".lex" url && 
-  ("https://ext.lucee.org/" `T.isPrefixOf` url || "https://download.lucee.org/" `T.isPrefixOf` url)
-
 -- | Compute hashes for multiple extensions in parallel (IO boundary)
 computeHashesForExtensions :: [Extension] -> UpdateM [Extension]
 computeHashesForExtensions extensions = do
   -- Use sequential processing to avoid overwhelming the server
   traverse computeHashesForExtension extensions
-
--- | Pure hash validation for consistency (accepts both base32 and SRI format)
-validateHash :: Text -> Either UpdateError Text
-validateHash hash 
-  | "sha256-" `T.isPrefixOf` hash = 
-      if T.length hash == 52 && T.all isValidBase64Char (T.drop 7 hash)
-      then Right hash
-      else Left $ ValidationError $ "Invalid SRI hash format: " <> hash
-  | T.length hash == 52 && T.all isValidNixBase32Char hash = 
-      Right hash  -- Accept base32 format too
-  | otherwise = Left $ ValidationError $ "Invalid hash format: " <> hash

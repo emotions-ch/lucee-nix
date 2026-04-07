@@ -9,16 +9,16 @@ module Lucee.Fetch
   ) where
 
 import Control.Exception (try)
-import Control.Monad.Except (ExceptT(..), throwError, runExceptT)
+import Control.Monad.Except (throwError, runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Network.HTTP.Req
-  ( GET(GET), NoReqBody(..), bsResponse, defaultHttpConfig, https
+  ( GET(GET), NoReqBody(..), bsResponse, defaultHttpConfig
   , req, responseBody, runReq, useHttpsURI, HttpException
   )
-import Text.URI (URI, mkURI)
+import Text.URI (mkURI)
 
 import Lucee.Types
 
