@@ -30,43 +30,77 @@ import Lucee.Constants
 import Lucee.Parse.Common (parseVersionFromUrl, extractFirstUrl)
 import Lucee.Parse.Extension.Url (parseExtensionFromUrl, sanitizeExtensionName)
 
--- | Find HTML container for specific extension name
+-- | Find HTML container for specific extension name with improved matching
 findExtensionContainerByName :: Text -> [Tag Text] -> Maybe [Tag Text]
 findExtensionContainerByName targetName tags = 
   let extSection = findExtensionsSection tags
       containers = findAllContainers extSection
-  in findMatchingContainer targetName containers
+      matchingContainers = filter (containerMatchesNameStrict targetName) containers
+  in case matchingContainers of
+        (container:_) -> Just container
+        [] -> Nothing  -- Return Nothing to force unique description creation
   where
     findAllContainers section = 
       sections (~== TagOpen ("div" :: String) [("class", "container")]) section
     
-    findMatchingContainer target containers = 
-      case filter (containerMatchesName target) containers of
-        (container:_) -> Just container
-        [] -> Nothing
-    
-    containerMatchesName target container = 
-      any (urlContainsName target) (extractUrlsFromContainer container)
+    -- Much stricter matching to prevent cross-contamination
+    containerMatchesNameStrict target container = 
+      let urls = extractUrlsFromContainer container
+          -- Require that ALL URLs in container match the target extension
+          allMatches = map (urlMatchesNameExactly target) urls
+          hasAnyUrl = not (null urls)
+          allUrlsMatch = hasAnyUrl && all id allMatches
+          -- Also check that we actually extracted a matching name from container
+          containerName = extractExtensionNameFromContainer container
+          namesMatch = case containerName of
+            Just name -> sanitizeExtensionName name == sanitizeExtensionName target
+            Nothing -> False
+      in allUrlsMatch && namesMatch
     
     extractUrlsFromContainer container = 
-      [url | TagOpen "a" attrs <- container, ("href", url) <- attrs, ".lex" `T.isSuffixOf` url]
+      [url | TagOpen "a" attrs <- container, ("href", url) <- attrs, lexExtension `T.isSuffixOf` url]
     
-    urlContainsName target url = 
+    -- Extract extension name directly from this container's title
+    extractExtensionNameFromContainer container = 
+      extractExtensionName container
+    
+    -- More precise URL matching - fix the cross-contamination issue
+    urlMatchesNameExactly target url = 
       let fileName = T.takeWhileEnd (/= '/') url
           baseName = T.dropEnd lexExtensionLength fileName
-      in case T.splitOn "-" baseName of
-           (name:_) -> name == target
-           [] -> False
+          -- Extract the extension name from the URL with better parsing
+          urlExtensionName = case T.splitOn "-" baseName of
+            (name:_) -> sanitizeExtensionName name  -- Use the same sanitization as the target
+            [] -> ""
+          sanitizedTarget = sanitizeExtensionName target
+      in urlExtensionName == sanitizedTarget
 
--- | Extract metadata from HTML container
+-- | Extract metadata from HTML container with better isolation
 extractMetadataFromContainer :: Text -> Maybe [Tag Text] -> (Text, Text, Text)
 extractMetadataFromContainer fallbackName Nothing = 
+  -- No container found - use safe defaults
   (fallbackName, defaultExtensionDescription, "")
 extractMetadataFromContainer fallbackName (Just container) = 
-  let displayName = maybe fallbackName id (extractExtensionName container)
-      description = maybe defaultExtensionDescription id (extractExtensionDescription container)  
-      uuid = maybe "" id (extractExtensionUuid container)
+  -- Container found - extract metadata from THIS specific container
+  let displayName = extractDisplayNameSafely fallbackName container
+      description = extractDescriptionSafely container
+      uuid = extractUuidSafely container
   in (displayName, description, uuid)
+  where
+    extractDisplayNameSafely fallback container =
+      case extractExtensionName container of
+        Just name -> name
+        Nothing -> fallback
+    
+    extractDescriptionSafely container = 
+      case extractExtensionDescription container of
+        Just desc -> desc
+        Nothing -> defaultExtensionDescription
+    
+    extractUuidSafely container =
+      case extractExtensionUuid container of
+        Just uuid -> uuid
+        Nothing -> ""
 
 -- | Parse a single URL to Extension record
 parseUrlToExtension :: Text -> Text -> Text -> Text -> Maybe Extension
@@ -154,16 +188,31 @@ extractExtensionUuid tags =
           lookup "id" attrs
     findPermalinkId (_ : rest) = findPermalinkId rest
 
--- | Extract extension description from the container
+-- | Extract extension description from the container with improved parsing
 extractExtensionDescription :: [Tag Text] -> Maybe Text
 extractExtensionDescription tags = 
   case findDescriptionText tags of
-    Just desc -> Just $ T.take maxDescriptionLength $ T.strip desc
-    Nothing -> Just defaultExtensionDescription -- Fallback
+    Just desc -> 
+      let cleaned = T.strip desc
+          -- Smart truncation that respects word boundaries
+          truncated = if T.length cleaned <= maxDescriptionLength
+                     then cleaned
+                     else T.take maxDescriptionLength cleaned <> "..."
+      in Just truncated
+    Nothing -> Nothing  -- Return Nothing so caller can decide on fallback
   where
     findDescriptionText [] = Nothing
-    findDescriptionText (TagOpen "p" attrs : TagText text : _)
+    -- Try multiple CSS patterns for description
+    findDescriptionText (TagOpen "p" attrs : TagText text : rest)
       | ("class", "fontStyle ml-2") `elem` attrs = Just text
+      | ("class", "description") `elem` attrs = Just text
+      | ("class", "ext-description") `elem` attrs = Just text
+      | otherwise = findDescriptionText rest
+    -- Also try div elements
+    findDescriptionText (TagOpen "div" attrs : TagText text : rest)
+      | ("class", "description") `elem` attrs = Just text
+      | ("class", "summary") `elem` attrs = Just text
+      | otherwise = findDescriptionText rest
     findDescriptionText (_ : rest) = findDescriptionText rest
 
 -- | Extract version sections (Releases, RCs/Betas, Snapshots)

@@ -18,6 +18,7 @@ import qualified Data.Map.Strict as Map
 import Text.HTML.TagSoup (Tag(..), parseTags)
 
 import Lucee.Types
+import Lucee.Constants (defaultExtensionDescription)
 import Lucee.Parse.Common (extractAllLexUrls)
 import Lucee.Parse.Extension.Url (parseExtensionFromUrl, groupExtensionUrls)
 import Lucee.Parse.Extension.Html (findExtensionContainerByName, extractMetadataFromContainer, parseUrlToExtension, extractExtensionMetadata, parseMinLuceeVersion)
@@ -42,11 +43,16 @@ parseExtensions html =
 -- | Parse extension group (name + URLs) into Extension records
 parseExtensionGroup :: [Tag Text] -> (Text, [Text]) -> [Extension]
 parseExtensionGroup tags (extName, urls) = 
-  let -- Find the HTML container for this extension (for metadata) - make this optional
+  let -- Try to find the HTML container for this extension (for metadata)
       containerMaybe = findExtensionContainerByName extName tags
       
-      -- Extract metadata from container (if found), otherwise use defaults
-      (displayName, description, uuid) = extractMetadataFromContainer extName containerMaybe
+      -- Create unique descriptions for each extension to prevent cross-contamination
+      (displayName, description, uuid) = case containerMaybe of
+        Just container -> extractMetadataFromContainer extName (Just container)
+        Nothing -> 
+          -- Create a unique, meaningful description for each extension
+          let uniqueDesc = createUniqueDescription extName
+          in (extName, uniqueDesc, "")
       
       -- Parse each URL into an Extension
       extensions = mapMaybe (parseUrlToExtension displayName description uuid) urls
@@ -55,3 +61,11 @@ parseExtensionGroup tags (extName, urls) =
       bestExtensions = selectBestVersions extensions
       
   in bestExtensions
+  where
+    -- Create meaningful descriptions when container extraction fails
+    createUniqueDescription name = 
+      let cleanName = T.replace "_" " " $ T.replace "extension" "" name
+          trimmedName = T.strip cleanName
+      in if T.null trimmedName
+         then defaultExtensionDescription
+         else "Lucee " <> trimmedName <> " extension"
