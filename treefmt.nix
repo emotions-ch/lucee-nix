@@ -20,6 +20,8 @@
     ];
 
     nixpkgs-fmt.excludes = [
+      "extensions/definitions.nix"
+      "lucee/definitions.nix"
     ];
   };
 }
