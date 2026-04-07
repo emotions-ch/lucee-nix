@@ -42,15 +42,21 @@ The Lucee-Nix flake provides a modern, infrastructure-as-code approach to deploy
 ```
 lucee-nix/
 ├── flake.nix           # Main flake configuration and overlay definition
-├── lucee.nix           # Core Lucee packaging logic
-├── docker.nix          # Docker image building functionality  
+├── docker.nix          # Docker image building functionality
+├── lucee/              # Core Lucee packaging logic (directory, not single file)
+│   ├── default.nix     # Lucee builder functions
+│   └── definitions.nix # Lucee JAR definitions and versions
 ├── extensions/         # Extension management system
 │   ├── default.nix     # Extension builder functions
 │   └── definitions.nix # Pre-defined extension catalog
-│
-└── examples/           # Complete usage examples
-    ├── flake.example.nix
-    └── production.env.example
+├── tools/              # Development and maintenance tools
+│   └── lucee-updater/  # Tool for updating Lucee definitions
+├── doc/                # Documentation and examples
+│   └── examples/       # Complete usage examples
+│       ├── devshell/
+│       ├── docker/
+│       └── full/
+└── treefmt.nix         # Code formatting configuration
 ```
 
 ---
