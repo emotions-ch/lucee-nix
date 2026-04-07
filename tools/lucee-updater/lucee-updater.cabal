@@ -5,7 +5,7 @@ version:        0.1.0.0
 synopsis:       Automated Lucee definitions updater for Nix
 description:    A pure functional tool to fetch and update Lucee version definitions
 author:         Lucee Nix Maintainers
-maintainer:     maintainer@example.com
+maintainer:     okayihan@emotions.ch
 license:        MIT
 build-type:     Simple
 
