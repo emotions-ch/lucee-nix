@@ -9,7 +9,8 @@ module Lucee
   , defaultConfig
   ) where
 
-import Control.Monad.Except (throwError)
+import Control.Concurrent.Async (mapConcurrently)
+import Control.Monad.Except (throwError, runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Time (getCurrentTime)
 import Data.Text (Text)
@@ -54,8 +55,14 @@ updateDefinitions config = do
   -- Pure filtering based on configuration
   let filteredVersions = filterVersionsByConfig config allVersions
   
-  -- IO boundary: compute hashes in parallel  
-  versionsWithHashes <- traverse computeHashesForVersion filteredVersions
+  -- IO boundary: compute hashes for multiple versions in parallel
+  versionResults <- liftIO $ mapConcurrently (\version -> 
+    runExceptT (computeHashesForVersion version)) filteredVersions
+  
+  -- Check for any errors in parallel processing
+  versionsWithHashes <- case sequence versionResults of
+    Left err -> throwError err
+    Right versions -> pure versions
   
   -- Handle extensions if configured
   extensions <- if configIncludeExtensions config
