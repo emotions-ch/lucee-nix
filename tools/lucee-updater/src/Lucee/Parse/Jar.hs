@@ -12,7 +12,6 @@ module Lucee.Parse.Jar
   , extractArtifactsFromSection
   , extractDownloadLinks
   , extractVersionNumber
-  , parseVersionFromUrl
   , removeDuplicateVersions
   , findH2Text
   ) where
@@ -25,6 +24,7 @@ import qualified Data.Text as T
 import Text.HTML.TagSoup (Tag(..), parseTags, sections, (~==))
 
 import Lucee.Types
+import Lucee.Parse.Common (parseVersionFromUrl)
 
 -- | Pure function to parse all Lucee jar versions from HTML
 parseVersions :: Text -> Either UpdateError [LuceeVersion]
@@ -128,17 +128,6 @@ extractVersionNumber tags =
   in case versionLinks of
     (url:_) -> parseVersionFromUrl url
     [] -> Nothing
-
--- | Pure version parsing from Lucee jar URL
-parseVersionFromUrl :: Text -> Maybe Text  
-parseVersionFromUrl url
-  | "lucee-zero-" `T.isInfixOf` url = 
-      let afterPrefix = T.drop 1 $ T.dropWhile (/= '-') $ 
-                       T.dropWhile (/= '-') $ 
-                       T.dropWhile (/= '-') url
-          beforeExtension = T.takeWhile (/= '.') afterPrefix
-      in if T.null beforeExtension then Nothing else Just beforeExtension
-  | otherwise = Nothing
 
 -- | Pure artifact extraction from Lucee jar version block (legacy function)
 extractArtifacts :: [Tag Text] -> Maybe (Map ArtifactType Text)

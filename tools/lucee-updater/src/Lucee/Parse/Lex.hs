@@ -31,6 +31,7 @@ import Text.HTML.TagSoup (Tag(..), parseTags, sections, (~==), (~/=))
 import Text.Regex.TDFA ((=~), getAllTextMatches)
 
 import Lucee.Types
+import Lucee.Parse.Common (parseVersionFromUrl)
 
 -- | Extract all .lex URLs from HTML using regex
 extractAllLexUrls :: Text -> [Text]
@@ -423,17 +424,6 @@ extractDownloadUrl tags =
   case [url | TagOpen "a" attrs <- tags, ("href", url) <- attrs] of
     (url:_) -> Just url
     [] -> Nothing
-
--- | Parse version from download URL
-parseVersionFromUrl :: Text -> Maybe Text
-parseVersionFromUrl url = 
-  let fileName = T.takeWhileEnd (/= '/') url
-      baseName = T.dropEnd 4 fileName -- Remove .lex extension
-      -- Extract version part after the last dash
-      parts = T.splitOn "-" baseName
-  in if length parts >= 2
-     then Just $ T.intercalate "-" $ drop 1 $ reverse $ take 2 $ reverse parts
-     else Nothing
 
 -- | Parse minimum Lucee version from title attribute
 parseMinLuceeVersion :: [Tag Text] -> Maybe Text
