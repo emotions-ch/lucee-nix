@@ -12,7 +12,6 @@ module Lucee.Types
   , UpdateM
   , parseVersionType
   , renderVersionType
-  , makeNixIdentifier
   , isVersionType
   ) where
 
@@ -93,16 +92,6 @@ renderVersionType :: VersionType -> Text
 renderVersionType Release = ""
 renderVersionType RC = "-RC" 
 renderVersionType Beta = "-BETA"
-
--- | Pure Nix identifier generation (no IO, deterministic)
-makeNixIdentifier :: Text -> VersionType -> Text
-makeNixIdentifier version vtype = 
-  let baseVersion = T.replace "." "_" version
-      suffix = case vtype of
-        Release -> "-zero"
-        RC -> "-RC-zero"
-        Beta -> "-BETA-zero"
-  in "lucee" <> baseVersion <> suffix
 
 -- | Pure version type checking
 isVersionType :: VersionType -> Text -> Bool

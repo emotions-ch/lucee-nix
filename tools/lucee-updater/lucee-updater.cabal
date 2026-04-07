@@ -26,11 +26,16 @@ library
   import: shared-properties
   exposed-modules:
     Lucee.Types
+    Lucee.Constants
     Lucee.Fetch
     Lucee.Parse
     Lucee.Parse.Common
     Lucee.Parse.Jar
     Lucee.Parse.Lex
+    Lucee.Parse.Extension.Url
+    Lucee.Parse.Extension.Html
+    Lucee.Parse.Extension.Version
+    Lucee.Validation
     Lucee.Hash
     Lucee.Nix
     Lucee

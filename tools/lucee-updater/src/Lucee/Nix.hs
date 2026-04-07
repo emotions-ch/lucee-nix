@@ -19,7 +19,8 @@ import qualified Data.Text as T
 import Data.Time (UTCTime, formatTime, defaultTimeLocale)
 
 import Lucee.Types
-import Lucee.Validation (isValidNixChar, validateNixSyntax)
+import Lucee.Constants
+import Lucee.Validation (isValidNixChar, validateNixSyntax, makeVersionNixId, makeExtensionNixId)
 
 -- | Pure function to generate Lucee version definitions only
 generateDefinitions :: LuceeDefinitions -> Either UpdateError Text  
@@ -54,29 +55,9 @@ generateArtifactDefinition version (artifactType, hash) = do
     , "    description = \"" <> description <> "\";"
     , "    version = \"" <> versionStr <> "\";"
     , "    sha256 = \"" <> hash <> "\";"
-    , "    javaVersion = 25;"
+    , "    javaVersion = " <> T.pack (show defaultJavaVersion) <> ";"
     , "  };"
     ]
-
--- | Pure Nix identifier generation for versions with artifacts
-makeVersionNixId :: Text -> VersionType -> ArtifactType -> Text
-makeVersionNixId version vtype artifactType = 
-  let versionPart = sanitizeVersion version vtype
-      artifactSuffix = case artifactType of
-        LuceeZero -> "-zero"
-        LuceeLight -> "-light" 
-        LuceeJar -> ""
-  in versionPart <> artifactSuffix
-
--- | Sanitize version for Nix identifier  
-sanitizeVersion :: Text -> VersionType -> Text
-sanitizeVersion version vtype = 
-  let majorVersion = T.take 1 version  -- e.g. "7" from "7.0.2.106"
-      minorVersion = T.take 1 (T.drop 2 version) -- e.g. "0" from "7.0.2.106"  
-  in case vtype of
-       Release -> "lucee" <> majorVersion
-       RC -> "lucee" <> majorVersion <> "_" <> minorVersion <> "-RC" 
-       Beta -> "lucee" <> majorVersion <> "_" <> minorVersion <> "-BETA"
 
 -- | Render artifact name for Nix
 renderArtifactName :: ArtifactType -> Text
@@ -137,21 +118,6 @@ nixFileHeader timestamp = T.unlines
 nixFileFooter :: Text
 nixFileFooter = "}"
 
--- | Pure extension Nix identifier generation
-makeExtensionNixId :: Text -> Text
-makeExtensionNixId name = 
-  let sanitized = T.map sanitizeChar name
-  in if T.all isValidNixChar sanitized 
-     then sanitized
-     else "\"" <> sanitized <> "\""
-
--- | Pure character sanitization for Nix identifiers
-sanitizeChar :: Char -> Char
-sanitizeChar c
-  | isValidNixChar c = c
-  | c == '-' = '_'
-  | c == '.' = '_'  
-  | otherwise = '_'
 -- | Pure string escaping for Nix
 escapeNixString :: Text -> Text
 escapeNixString = T.concatMap escapeChar

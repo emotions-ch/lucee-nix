@@ -20,11 +20,17 @@ module Lucee.Validation
   , validateStringLiterals
   , validateNixIdentifiers
   , extractIdentifiersFromText
+  -- Nix identifier generation (unified)
+  , makeNixIdentifier
+  , makeVersionNixId
+  , makeExtensionNixId
+  , sanitizeNixName
+  , NixIdentifierType(..)
   ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import Lucee.Types (UpdateError(..))
+import Lucee.Types (UpdateError(..), VersionType(..), ArtifactType(..))
 
 -- | Character validation functions
 
@@ -146,3 +152,72 @@ validateNixIdentifiers nixContent =
 extractIdentifiersFromText :: Text -> [Text]
 extractIdentifiersFromText text = 
   T.words $ T.filter (\c -> isValidNixChar c || c == ' ') text
+
+-- | Unified Nix identifier generation system
+
+-- | Types of Nix identifiers for consistent generation
+data NixIdentifierType 
+  = LuceeVersionId ArtifactType
+  | ExtensionId  
+  | SimpleVersionId
+  deriving (Show, Eq)
+
+-- | Unified Nix identifier generation (replaces scattered functions)
+makeNixIdentifier :: Text -> VersionType -> NixIdentifierType -> Text
+makeNixIdentifier input vtype idType = case idType of
+  SimpleVersionId -> 
+    -- Simple approach from Types.hs (for backward compatibility)
+    let baseVersion = T.replace "." "_" input
+        suffix = case vtype of
+          Release -> "-zero"
+          RC -> "-RC-zero"
+          Beta -> "-BETA-zero"
+    in "lucee" <> baseVersion <> suffix
+    
+  LuceeVersionId artifactType -> 
+    -- Complex artifact-aware approach from Nix.hs
+    makeVersionNixId input vtype artifactType
+    
+  ExtensionId -> 
+    -- Extension-specific approach
+    makeExtensionNixId input
+
+-- | Generate version-based Nix identifier with artifact awareness
+makeVersionNixId :: Text -> VersionType -> ArtifactType -> Text
+makeVersionNixId version vtype artifactType = 
+  let versionPart = sanitizeVersionForNix version vtype
+      artifactSuffix = case artifactType of
+        LuceeZero -> "-zero"
+        LuceeLight -> "-light" 
+        LuceeJar -> ""
+  in versionPart <> artifactSuffix
+
+-- | Generate extension-based Nix identifier
+makeExtensionNixId :: Text -> Text
+makeExtensionNixId name = 
+  let sanitized = sanitizeNixName name
+  in if T.all isValidNixChar sanitized 
+     then sanitized
+     else "\"" <> sanitized <> "\""
+
+-- | Sanitize version for Nix identifier generation
+sanitizeVersionForNix :: Text -> VersionType -> Text
+sanitizeVersionForNix version vtype = 
+  let majorVersion = T.take 1 version  -- e.g. "7" from "7.0.2.106"
+      minorVersion = T.take 1 (T.drop 2 version) -- e.g. "0" from "7.0.2.106"  
+  in case vtype of
+       Release -> "lucee" <> majorVersion
+       RC -> "lucee" <> majorVersion <> "_" <> minorVersion <> "-RC" 
+       Beta -> "lucee" <> majorVersion <> "_" <> minorVersion <> "-BETA"
+
+-- | Sanitize arbitrary text for Nix identifiers 
+sanitizeNixName :: Text -> Text
+sanitizeNixName = T.map sanitizeNixChar
+
+-- | Sanitize individual characters for Nix identifiers
+sanitizeNixChar :: Char -> Char
+sanitizeNixChar c
+  | isValidNixChar c = c
+  | c == '-' = '_'
+  | c == '.' = '_'  
+  | otherwise = '_'
