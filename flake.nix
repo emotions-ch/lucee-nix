@@ -111,18 +111,12 @@
             name = "lucee-nix-dev";
 
             buildInputs = with pkgs; [
-              statix
-              deadnix
-
               jq
               openjdk
             ];
 
             shellHook = ''
               echo "  nix fmt             - Format Nix and Haskell files"
-              echo "  nixpkgs-fmt         - Format Nix files"
-              echo "  statix              - Lint Nix files"
-              echo "  deadnix             - Find dead code in Nix files"
               echo "  nix run .#lucee-updater - Update Lucee definitions"
               echo ""
             '';
