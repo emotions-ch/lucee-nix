@@ -1,5 +1,5 @@
 # Lucee Definitions - Auto-generated
-# Generated at: 2026-04-08 00:16:51 UTC
+# Generated at: 2026-04-08 17:27:38 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 {

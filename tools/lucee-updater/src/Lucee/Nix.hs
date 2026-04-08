@@ -87,7 +87,7 @@ generateExtensionDefinition ext = do
       Right $
         T.unlines
           [ "  " <> nixId <> " = mkLuceeExtension {",
-            "    name = \"" <> extName ext <> "\";",
+            "    name = \"" <> extDisplayName ext <> "\";",
             "    description = \"" <> escapeNixString (extDescription ext) <> "\";",
             "    version = \"" <> extVersion ext <> "\";",
             "    sha256 = \"" <> sha256Hash <> "\";",

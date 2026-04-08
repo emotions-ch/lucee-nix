@@ -42,16 +42,23 @@ parseExtensions html =
 -- | Parse extension group (name + URLs) into Extension records
 parseExtensionGroup :: [Tag Text] -> (Text, [Text]) -> [Extension]
 parseExtensionGroup tags (extName, urls) =
-  let -- Try to find the HTML container for this extension (for metadata)
+  let -- Extract original name from the first URL to preserve dots/dashes
+      originalDisplayName = case urls of
+        (firstUrl : _) -> case parseExtensionFromUrl firstUrl of
+          Just (originalName, _, _) -> originalName -- Use original name from URL
+          Nothing -> extName -- Fallback to sanitized name
+        [] -> extName -- Fallback if no URLs
+
+      -- Try to find the HTML container for this extension (for metadata)
       containerMaybe = findExtensionContainerByName extName tags
 
       -- Create unique descriptions for each extension to prevent cross-contamination
       (displayName, description, uuid) = case containerMaybe of
-        Just container -> extractMetadataFromContainer extName (Just container)
+        Just container -> extractMetadataFromContainer originalDisplayName (Just container)
         Nothing ->
           -- Create a unique, meaningful description for each extension
           let uniqueDesc = createUniqueDescription extName
-           in (extName, uniqueDesc, "")
+           in (originalDisplayName, uniqueDesc, "") -- Use original name for display
 
       -- Parse each URL into an Extension
       extensions = mapMaybe (parseUrlToExtension displayName description uuid) urls
