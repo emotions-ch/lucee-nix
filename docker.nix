@@ -75,7 +75,7 @@ let
     mkdir -p /opt/lucee/webapps/health
     cp ${cfConfigJSON} /opt/lucee/lucee-server/deploy/.CFConfig.json
     ${
-      pkgs.lib.optionalString isMasa == false "cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm"
+      pkgs.lib.optionalString (isMasa == false) "cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm"
     }
     cp ${healthCheckScript} /opt/lucee/health-check.sh
     cp ${loggingProperties} /opt/lucee/conf/logging.properties
@@ -152,7 +152,7 @@ pkgs.dockerTools.buildImage {
     #!${pkgs.runtimeShell}
     ${pkgs.dockerTools.shadowSetup}
     groupadd -r lucee
-    useradd -r -g lucee -d /opt/lucee -s ${pkgs.lib.getExe pkgs.bash}h lucee
+    useradd -r -g lucee -d /opt/lucee -s ${pkgs.lib.getExe pkgs.bash} lucee
     mkdir -p /opt/lucee /app
     chown lucee:lucee /opt/lucee
 
