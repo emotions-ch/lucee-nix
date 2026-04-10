@@ -1,5 +1,5 @@
 # Lucee Extensions Definitions - Auto-generated
-# Generated at: 2026-04-09 00:13:42 UTC
+# Generated at: 2026-04-10 00:16:26 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 { mkLuceeExtension }:
