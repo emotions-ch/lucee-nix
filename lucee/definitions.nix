@@ -1,5 +1,5 @@
 # Lucee Definitions - Auto-generated
-# Generated at: 2026-04-13 00:17:08 UTC
+# Generated at: 2026-04-13 16:23:59 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 {
@@ -41,7 +41,7 @@
     name = "lucee-zero";
     description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
     version = "7.0.3.43";
-    sha256 = "sha256-3V7CI7DbysHrevdWbQa2z7SvzZ/W2Zq21R4rBVSz0Io=";
+    sha256 = "sha256-DQ8USIzieeVwIkw6ud4pcNcupG+Wk4+DpNAbLFZCvOE=";
     javaVersion = 25;
   };
 
@@ -49,7 +49,7 @@
     name = "lucee";
     description = "Lucee jar file without dependencies Lucee needs to run";
     version = "7.0.3.43";
-    sha256 = "sha256-RlCyGYCnL5COX/Nm0ZcEEWNhK5c/ywT+ITE8PG9Pq6U=";
+    sha256 = "sha256-55FO6hLPGHjqDB0JBhWYQ1tls3Cb+bHz8p1dVA9kiXo=";
     javaVersion = 25;
   };
 
@@ -57,7 +57,7 @@
     name = "lucee-light";
     description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
     version = "7.0.3.43";
-    sha256 = "sha256-iQQ1xLvjMxR21c13+ySs04q/2VtMw5s+wDPwqqEWkr0=";
+    sha256 = "sha256-WbWWz5VGnrf1dPSf8XU0/ktzdpp+rf+ZWv7MmNSN8pQ=";
     javaVersion = 25;
   };
 
@@ -66,7 +66,7 @@
     name = "lucee-zero";
     description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
     version = "6.2.6.19";
-    sha256 = "sha256-oEs1oWtoAetjQzQ02/D9tuSY7SFUJpsrNS3Vb3uvw5c=";
+    sha256 = "sha256-GbFTGm/vPMLzghRD3VKUckUBVR5/AuuxX++LSS1xoOM=";
     javaVersion = 25;
   };
 
@@ -74,7 +74,7 @@
     name = "lucee";
     description = "Lucee jar file without dependencies Lucee needs to run";
     version = "6.2.6.19";
-    sha256 = "sha256-/q5GF00aZnN5J6W4DvnFsvwd+uLDWICY+KYtZdv93UY=";
+    sha256 = "sha256-RfUAnTbFl1LX89zFRBjiz99GN5OJmRXOWpy6FQ5S/dI=";
     javaVersion = 25;
   };
 
@@ -82,7 +82,7 @@
     name = "lucee-light";
     description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
     version = "6.2.6.19";
-    sha256 = "sha256-zdGU5JzvJsGCrq7uOLOcdjkp6h8RDfvnW6u+ipEjqR0=";
+    sha256 = "sha256-ZHbpfayd5E8RyKmTQgXnbGuFNe3uVS1Lr1aZ3pbaEA4=";
     javaVersion = 25;
   };
 

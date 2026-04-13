@@ -1,5 +1,5 @@
 # Lucee Extensions Definitions - Auto-generated
-# Generated at: 2026-04-13 00:17:08 UTC
+# Generated at: 2026-04-13 16:23:59 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 { mkLuceeExtension }:
@@ -97,8 +97,8 @@
   crypto_extension = mkLuceeExtension {
     name = "crypto-extension";
     description = "Lucee crypto extension";
-    version = "1.0.0.0-SNAPSHOT";
-    sha256 = "sha256-sD/O0uvl9sSLXSQ0zy7n2wdPmdp4El68Dr72k0ga23M=";
+    version = "1.0.0.1-SNAPSHOT";
+    sha256 = "sha256-e5iRQKWGtoOWGcTk0P4fCj1SFcPZFSndIgD15ezNtus=";
   };
 
 
