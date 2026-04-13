@@ -16,6 +16,7 @@ where
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import Lucee.Types (VersionType (..))
 import Text.HTML.TagSoup (Tag (..))
 import Text.Regex.TDFA (getAllTextMatches, (=~))
 
@@ -77,11 +78,16 @@ extractLuceeJarUrls = extractUrlsWithFilter ("https://cdn.lucee.org/" `T.isPrefi
 extractLuceeExtensionUrls :: [Tag Text] -> [Text]
 extractLuceeExtensionUrls = extractUrlsWithFilter ("https://ext.lucee.org/" `T.isPrefixOf`)
 
--- | Extract URLs filtered by version string
-extractVersionFilteredUrls :: Text -> [Tag Text] -> [Text]
-extractVersionFilteredUrls version tags =
+-- | Extract URLs filtered by version string and version type
+extractVersionFilteredUrls :: Text -> VersionType -> [Tag Text] -> [Text]
+extractVersionFilteredUrls version versionType tags =
   let allUrls = extractLuceeJarUrls tags
-   in filter (T.isInfixOf version) allUrls
+      -- Create precise pattern based on version type to avoid cross-contamination
+      versionPattern = case versionType of
+        Release -> version <> ".jar" -- Exact match: "7.0.3.43.jar"
+        RC -> version <> "-RC.jar" -- RC suffix: "7.0.3.43-RC.jar"
+        Beta -> version <> "-BETA.jar" -- BETA suffix: "7.0.3.43-BETA.jar"
+   in filter (T.isSuffixOf versionPattern) allUrls
 
 -- | Extract first URL from tags (for single URL scenarios)
 extractFirstUrl :: [Tag Text] -> Maybe Text

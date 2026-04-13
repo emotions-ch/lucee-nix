@@ -49,7 +49,7 @@ removeDuplicateVersions versions =
 parseVersionFromH2Section :: [Tag Text] -> Maybe LuceeVersion
 parseVersionFromH2Section tags = do
   (version, vtype) <- extractVersionFromH2Header tags
-  artifacts <- extractArtifactsFromSectionForVersion tags version
+  artifacts <- extractArtifactsFromSectionForVersion tags version vtype
   pure $
     LuceeVersion
       { lvVersion = version,
@@ -58,10 +58,10 @@ parseVersionFromH2Section tags = do
         lvSha256Hashes = M.empty -- Will be filled by hash computation
       }
 
--- | Extract Lucee jar artifacts from the section, but only those that match the specific version
-extractArtifactsFromSectionForVersion :: [Tag Text] -> Text -> Maybe (Map ArtifactType Text)
-extractArtifactsFromSectionForVersion tags version =
-  let links = extractVersionFilteredUrls version tags
+-- | Extract Lucee jar artifacts from the section, but only those that match the specific version and type
+extractArtifactsFromSectionForVersion :: [Tag Text] -> Text -> VersionType -> Maybe (Map ArtifactType Text)
+extractArtifactsFromSectionForVersion tags version versionType =
+  let links = extractVersionFilteredUrls version versionType tags
       artifactMap = M.fromList $ mapMaybe classifyArtifactLink links
    in if M.null artifactMap then Nothing else Just artifactMap
 
