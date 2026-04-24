@@ -1,5 +1,5 @@
 # Lucee Extensions Definitions - Auto-generated
-# Generated at: 2026-04-23 00:22:33 UTC
+# Generated at: 2026-04-24 00:21:49 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 { mkLuceeExtension }:
@@ -209,8 +209,8 @@
   hibernate_extension = mkLuceeExtension {
     name = "hibernate-extension";
     description = "Lucee hibernate extension";
-    version = "5.6.15.15-SNAPSHOT";
-    sha256 = "sha256-xLwc28ptUF2F+fLtyS/0+m8cUTW6sDXhiFlJEREqHD8=";
+    version = "5.6.15.15-RC";
+    sha256 = "sha256-snEl237RMU7GEr+d68/RUwpDejVspGp7V6L0J0P819U=";
   };
 
 
