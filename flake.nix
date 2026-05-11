@@ -113,6 +113,7 @@
             buildInputs = with pkgs; [
               jq
               openjdk
+              ghc
             ];
 
             shellHook = ''
