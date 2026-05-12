@@ -1,5 +1,5 @@
 # Lucee Extensions Definitions - Auto-generated
-# Generated at: 2026-05-11 00:25:18 UTC
+# Generated at: 2026-05-12 00:26:22 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 { mkLuceeExtension }:
@@ -307,6 +307,14 @@
     description = "Lucee lucene search extension";
     version = "3.0.0.163";
     sha256 = "sha256-OqhwnD63QdHW8Ay4xwIwBcOMZOgMEgIrK2F+PI/lXPw=";
+  };
+
+
+  mail_extension = mkLuceeExtension {
+    name = "mail-extension";
+    description = "Lucee mail extension";
+    version = "1.1.0.6";
+    sha256 = "sha256-/K6gGUO+MTDBBe7vJCBkH0U5ShbxVm63V0XlSEXxg5Y=";
   };
 
 
