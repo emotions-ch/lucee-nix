@@ -1,5 +1,5 @@
 # Lucee Definitions - Auto-generated
-# Generated at: 2026-05-12 00:26:22 UTC
+# Generated at: 2026-05-13 00:27:57 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 {
@@ -62,6 +62,31 @@
   };
 
 
+  lucee7_0-RC-zero = mkLuceeVersion {
+    name = "lucee-zero";
+    description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
+    version = "7.0.4.34-RC";
+    sha256 = "sha256-I3/Ow7Za1FwrM0+6r+baflmcWCbGzTM4PdcODQsleq8=";
+    javaVersion = 25;
+  };
+
+  lucee7_0-RC = mkLuceeVersion {
+    name = "lucee";
+    description = "Lucee jar file without dependencies Lucee needs to run";
+    version = "7.0.4.34-RC";
+    sha256 = "sha256-ABR2m21zHSF7dH0gDEI8OKJW1jR2vHiSB99j1B2VSgo=";
+    javaVersion = 25;
+  };
+
+  lucee7_0-RC-light = mkLuceeVersion {
+    name = "lucee-light";
+    description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
+    version = "7.0.4.34-RC";
+    sha256 = "sha256-q4Igi7xdqQd6sPxP/gPx4M1u0uk3ysdUtCjSXsnrCW4=";
+    javaVersion = 25;
+  };
+
+
   lucee6-zero = mkLuceeVersion {
     name = "lucee-zero";
     description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
@@ -83,6 +108,31 @@
     description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
     version = "6.2.6.19";
     sha256 = "sha256-ZHbpfayd5E8RyKmTQgXnbGuFNe3uVS1Lr1aZ3pbaEA4=";
+    javaVersion = 25;
+  };
+
+
+  lucee6_2-RC-zero = mkLuceeVersion {
+    name = "lucee-zero";
+    description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
+    version = "6.2.7.16-RC";
+    sha256 = "sha256-r+DvWvD5RATGEntlbMuYwWTPbZHom+7sPFkrGJEhhiU=";
+    javaVersion = 25;
+  };
+
+  lucee6_2-RC = mkLuceeVersion {
+    name = "lucee";
+    description = "Lucee jar file without dependencies Lucee needs to run";
+    version = "6.2.7.16-RC";
+    sha256 = "sha256-dpNxUsTcWQseyt7nnug8KyLoOr8YWYSmg4lWvOYztMo=";
+    javaVersion = 25;
+  };
+
+  lucee6_2-RC-light = mkLuceeVersion {
+    name = "lucee-light";
+    description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
+    version = "6.2.7.16-RC";
+    sha256 = "sha256-sqark9w1OMwhMdzudN58pzla1E4ymQkQkaNOgvvNNG4=";
     javaVersion = 25;
   };
 
