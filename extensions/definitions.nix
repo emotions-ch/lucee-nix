@@ -1,5 +1,5 @@
 # Lucee Extensions Definitions - Auto-generated
-# Generated at: 2026-06-08 00:33:11 UTC
+# Generated at: 2026-06-09 00:28:04 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 { mkLuceeExtension }:
@@ -121,8 +121,8 @@
   dynamodb_extension = mkLuceeExtension {
     name = "dynamodb-extension";
     description = "Lucee dynamodb extension";
-    version = "1.0.0.7-RC";
-    sha256 = "sha256-X5ooc9QW2mCT48DWpOm8ak5CyMxvZsejm8ssgp5H9zE=";
+    version = "1.0.0.8";
+    sha256 = "sha256-ylKa/l9pYKNOkQNx3i1nko/5nCYGrsJhQUaE0bdNciI=";
   };
 
 
@@ -241,8 +241,8 @@
   json_extension = mkLuceeExtension {
     name = "json-extension";
     description = "Lucee json extension";
-    version = "2.0.0.3-SNAPSHOT";
-    sha256 = "sha256-nedWcdGblnFcd6wwMRW/XTyyYtaHjTNA7qLMr2MRUuM=";
+    version = "2.0.0.3";
+    sha256 = "sha256-G5kJj7Pw4zLjxRahoj55BJJz/mUMcPfRRBBAasvWKlY=";
   };
 
 
@@ -315,6 +315,14 @@
     description = "Lucee mail extension";
     version = "1.1.0.6";
     sha256 = "sha256-/K6gGUO+MTDBBe7vJCBkH0U5ShbxVm63V0XlSEXxg5Y=";
+  };
+
+
+  mcp_server_extension = mkLuceeExtension {
+    name = "mcp-server-extension";
+    description = "Lucee mcp server extension";
+    version = "1.0.0.9-RC";
+    sha256 = "sha256-5JuKxUe9XTQG3BiaJuceqSekPfDiqi1SSv1x5RilEEo=";
   };
 
 
