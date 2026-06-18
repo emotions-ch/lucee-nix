@@ -1,5 +1,5 @@
 # Lucee Extensions Definitions - Auto-generated
-# Generated at: 2026-06-17 00:35:58 UTC
+# Generated at: 2026-06-18 00:36:51 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 { mkLuceeExtension }:
@@ -497,8 +497,8 @@
   quartz_extension = mkLuceeExtension {
     name = "quartz-extension";
     description = "Lucee quartz extension";
-    version = "1.0.0.44-RC";
-    sha256 = "sha256-7heOHnrt8sX0+tQkZzxrHVU566vUDE4pxz+cWkRdZjo=";
+    version = "1.0.0.53";
+    sha256 = "sha256-jPWbsguGaM+tV6L8r8xXpI5R+7AAfvbK0sHt/v43Dyc=";
   };
 
 
@@ -545,8 +545,8 @@
   tasks_extension = mkLuceeExtension {
     name = "tasks-extension";
     description = "Lucee tasks extension";
-    version = "1.1.0.1";
-    sha256 = "sha256-n3HQHgeN9kzcQ6KeeJmk4mfw0sAdEHG0n5mCrG9RDAI=";
+    version = "1.1.0.7";
+    sha256 = "sha256-U4RgnxHWV3T30d9K36k1QWengQXC4wryeUZ+p3o2lOg=";
   };
 
 
