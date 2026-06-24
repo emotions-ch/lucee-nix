@@ -1,5 +1,5 @@
 # Lucee Extensions Definitions - Auto-generated
-# Generated at: 2026-06-23 00:32:35 UTC
+# Generated at: 2026-06-24 00:27:12 UTC
 # DO NOT EDIT MANUALLY - Use lucee-updater tool
 
 { mkLuceeExtension }:
@@ -297,8 +297,8 @@
   lucee_image_extension = mkLuceeExtension {
     name = "lucee.image.extension";
     description = "Lucee lucee image extension";
-    version = "2.0.0.26";
-    sha256 = "sha256-NZE/fcXmExAhv+9qPaUIulBiiNCyeNFEnffHWgagGYM=";
+    version = "2.0.0.34";
+    sha256 = "sha256-azVKpNcAYJVJGb4ZzAYwQu9Rv51Xu+nOXnYQnNgKE5I=";
   };
 
 
