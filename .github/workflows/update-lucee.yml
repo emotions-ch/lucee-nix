@@ -1,9 +1,10 @@
 name: Update Lucee Definitions
 
 on:
-  schedule:
-    # Run daily at 23:59 UTC
-    - cron: '59 23 * * *'
+  # Disabled: https://github.com/emotions-ch/lucee-nix/issues/1
+  # schedule:
+  #   # Run daily at 23:59 UTC
+  #   - cron: '59 23 * * *'
   # Allow manual trigger
   workflow_dispatch:
 
