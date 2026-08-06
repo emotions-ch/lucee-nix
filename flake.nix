@@ -157,8 +157,6 @@
 
             stable = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
 
-            lucee-extensions = pkgs.luceeExtensions;
-
             # Lucee definitions updater
             lucee-updater = pkgs.haskellPackages.callCabal2nix "lucee-updater" ./tools/lucee-updater { };
             update-lucee = pkgs.writeShellScriptBin "update-lucee" ''
@@ -167,6 +165,11 @@
               echo "y" | ${self.packages.${system}.lucee-updater}/bin/lucee-updater "$@"
               rm ./*.tmp
             '';
+          };
+
+          # `packages` may only hold flat derivations
+          legacyPackages = {
+            lucee-extensions = pkgs.luceeExtensions;
           };
 
           formatter = treefmtEval.config.build.wrapper;

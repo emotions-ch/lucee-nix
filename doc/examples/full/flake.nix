@@ -152,12 +152,32 @@
           };
 
           # to see all avialable extensions run:
-          # nix eval --impure --expr 'let flake = builtins.getFlake "github:emotions-ch/lucee-nix"; pkgs = import <nixpkgs> { overlays = [ flake.overlays.default ]; }; in builtins.attrNames pkgs.luceeExtensions'
+          # nix eval github:emotions-ch/lucee-nix#lucee-extensions --apply builtins.attrNames
           extensions = [
-            pkgs.luceeExtensions."org.lucee.mssql"
-            pkgs.luceeExtensions.image-extension
-            pkgs.luceeExtensions.compress
+            pkgs.luceeExtensions.org_lucee_mssql
+            pkgs.luceeExtensions.image_extension
+            pkgs.luceeExtensions.compress_extension
           ];
+
+          # bound here rather than inline in `packages` so `checks` can reuse it
+          dockerImage = pkgs.mkLuceeDockerImage {
+            inherit
+              lucee
+              extensions
+              project
+              ;
+            webapp = ./wwwroot; # folder containing your index.cfm
+            isMasa = true;
+            cfConfig = prodCfConfig;
+
+            # for GHCR integration
+            name = "ghcr.io/example/${project}";
+            imageConfig = {
+              Labels = {
+                "org.opencontainers.image.source" = "https://github.com/example/${project}";
+              };
+            };
+          };
 
           # supplies configuration for lucee-manager in local development (entirely optional but useful if one is running multiple instances)
           # https://github.com/emotions-ch/lucee-manager/
@@ -189,24 +209,16 @@
             default = startScript;
 
             # Docker image for production deployment of a masa application
-            dockerImage = pkgs.mkLuceeDockerImage {
-              inherit
-                lucee
-                extensions
-                project
-                ;
-              webapp = ./wwwroot; # folder containing your index.cfm
-              isMasa = true;
-              cfConfig = prodCfConfig;
+            dockerImage = dockerImage;
+          };
 
-              # for GHCR integration
-              name = "ghcr.io/example/${project}";
-              imageConfig = {
-                Labels = {
-                  "org.opencontainers.image.source" = "https://github.com/example/${project}";
-                };
-              };
-            };
+          # the whole CI pipeline: formatting, plus a NixOS VM test that boots
+          # the image and asserts Lucee serves. `nix flake check` runs both, so
+          # developers get the same verdict locally that CI will give them.
+          checks = pkgs.mkLuceeChecks {
+            src = ./.;
+            name = project;
+            image = dockerImage;
           };
         }
       )

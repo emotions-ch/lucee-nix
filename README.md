@@ -157,18 +157,22 @@ To see all available extensions and their versions:
 
 ```bash
 # List extension names
-nix eval --impure --expr 'let flake = builtins.getFlake "github:emotions-ch/lucee-nix"; pkgs = import <nixpkgs> { overlays = [ flake.overlays.default ]; }; in builtins.attrNames pkgs.luceeExtensions'
+nix eval github:emotions-ch/lucee-nix#lucee-extensions --apply builtins.attrNames
 
 # List extensions with versions
-nix eval --impure --expr 'let flake = builtins.getFlake "github:emotions-ch/lucee-nix"; pkgs = import <nixpkgs> { overlays = [ flake.overlays.default ]; }; in builtins.mapAttrs (name: ext: ext.version) pkgs.luceeExtensions' --json
+nix eval github:emotions-ch/lucee-nix#lucee-extensions --json \
+  --apply 'builtins.mapAttrs (_: ext: ext.version)'
 ```
+
+Attribute names are the extension IDs with every `.` and `-` replaced by `_`, so
+`image.extension` is `image_extension` and `org.lucee.mssql` is `org_lucee_mssql`.
 
 **Usage:**
 ```nix
 extensions = [
-  pkgs.luceeExtensions."org.postgresql.jdbc"
-  pkgs.luceeExtensions.image-extension  
-  pkgs.luceeExtensions.compress
+  pkgs.luceeExtensions.org_postgresql_jdbc
+  pkgs.luceeExtensions.image_extension
+  pkgs.luceeExtensions.compress_extension
 ];
 ```
 
