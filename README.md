@@ -9,6 +9,7 @@ A Nix flake, providing declarative infrastructure for [Lucee Server](https://www
    - [Core Functions](#core-functions)
    - [Extension Functions](#extension-functions)
    - [Docker Functions](#docker-functions)
+   - [Testing Functions](#testing-functions)
 3. [Configuration Reference](#configuration-reference)
    - [CFConfig Schema](#cfconfig-schema)
    - [Environment Variables](#environment-variables)
@@ -213,7 +214,7 @@ mkLuceeDockerImage {
 
 **Container Features:**
 - **Security**: Runs as non-root `lucee` user (UID 1000)
-- **Health Checks**: HTTP endpoint monitoring on `/` for Masa applications and `/health/` for non-Masa applications
+- **Health Checks**: two probes, see [Liveness vs. readiness](#liveness-vs-readiness)
 - **Signal Handling**: Proper SIGTERM/SIGINT handling for graceful shutdown
 - **Configuration**: CFConfig JSON deployment with environment substitution
 - **Extensions**: Automatic deployment of .lex files during build
@@ -236,6 +237,138 @@ dockerImage = pkgs.mkLuceeDockerImage {
   };
 };
 ```
+
+#### Liveness vs. readiness
+
+The image ships one probe script, `/opt/lucee/health-check.sh`, with two modes:
+
+| Mode | Checks | Needs a database |
+| --- | --- | --- |
+| `--liveness` | `GET /health/` returns `OK` | no |
+| `--readiness` (default) | for Masa, `GET /` returns a `Document Moved` redirect; otherwise same as liveness | yes, for Masa |
+
+`/health` is deployed for every image as its own Tomcat context, with no
+`Application.cfc` in its lookup chain. It therefore answers even when the ROOT
+context cannot bootstrap — which is exactly the case in a Nix build sandbox,
+where there is no network and so no database.
+
+The container's `HEALTHCHECK` is wired to **readiness**, so orchestrators still
+only route traffic to containers that have actually reached their database.
+Liveness exists for CI, and for load balancers that want to distinguish "process
+is wedged" from "dependency is down".
+
+---
+
+### Testing Functions
+
+#### `mkLuceeChecks`
+
+The standard `checks` output for a project. Start here — you should not need
+`mkLuceeImageTest` directly unless you are customising the VM test.
+
+```nix
+mkLuceeChecks {
+  src;                                      # project root, i.e. ./. (required)
+  name ? null;                              # project name, used to name the image test
+  image ? null;                             # mkLuceeDockerImage result; omit if you have none
+  formatter ? pkgs.nixfmt-tree;
+  imageTest ? {};                           # extra args merged into the mkLuceeImageTest call
+  extra ? {};                               # project-specific additional checks
+}
+```
+
+**Returns** an attrset suitable as your flake's `checks` output:
+
+| Check | Present when | What it does |
+| --- | --- | --- |
+| `nix-fmt` | always | `formatter --ci --fail-on-change` over `src` |
+| `image-health` | `image != null` | [`mkLuceeImageTest`](#mkluceeimagetest) on that image |
+
+**Example — this is the whole `checks` output for a typical project:**
+```nix
+checks = pkgs.mkLuceeChecks {
+  src = ./.;
+  name = project.name;
+  image = dockerImage;
+};
+```
+
+**Notes:**
+- `src` cannot be defaulted. A `./.` written inside lucee-nix would resolve to the
+  lucee-nix store path, so it has to come from *your* flake.
+- Keep `formatter` in agreement with your flake's `formatter` output. If they drift,
+  `nix fmt` produces output that `nix-fmt` then rejects.
+- The image is deliberately *not* repeated as a check. CI that builds `checks.*`
+  should build `packages.*` too, and `image-health` depends on the image anyway.
+- `extra` is merged last, so it can also override any of the above.
+
+#### `mkLuceeImageTest`
+
+Boots an image produced by [`mkLuceeDockerImage`](#mkluceedockerimage) inside a
+NixOS VM under podman and asserts that Lucee serves. Hermetic: no network, no
+secrets, no registry access, so it works as an ordinary flake `check` and can be
+gated on by any Nix-native CI.
+
+```nix
+mkLuceeImageTest {
+  image;                                    # mkLuceeDockerImage result (required)
+  name ? "lucee-image-health";              # test / derivation name
+  containerName ? "lucee";                  # container + systemd unit name
+  port ? 8888;
+  backend ? "podman";                       # or "docker"
+  environment ? {};                         # merged over the dummy DATABASE_* values
+  healthPath ? "/health/";
+  expect ? "OK";                            # substring the probe must return
+  memorySize ? 4096;                        # MiB
+  diskSize ? 16384;                         # MiB, must fit the unpacked image
+  cores ? 2;
+  requireKvm ? true;                        # false drops the kvm scheduling constraint
+  bootTimeout ? 600;                        # seconds
+  extraTestScript ? "";                     # extra python, appended to testScript
+  isMasa ? image.luceeIsMasa or false;      # read off the image; see Notes
+}
+```
+
+**Returns:** a NixOS test derivation. Put it in `checks` and it runs under
+`nix flake check`.
+
+**What it asserts:** the container unit starts, the container stays running, port
+8888 opens, the liveness endpoint returns `OK`, and the bundled
+`health-check.sh --liveness` succeeds inside the container. For Masa images it
+additionally asserts that `--readiness` *fails* without a database. Container logs
+are printed unconditionally, so a failure is diagnosable from the build log.
+
+**What it does not assert:** database connectivity. That needs credentials and a
+reachable server, neither of which exist in a build sandbox — verify it at deploy
+time instead.
+
+**Example:**
+```nix
+checks.image-health = pkgs.mkLuceeImageTest {
+  name = "myproject-image-health";
+  image = self.packages.${system}.dockerImage;
+
+  extraTestScript = ''
+    with subtest("app renders"):
+        machine.succeed("curl -fsS http://127.0.0.1:8888/ | grep -q 'My App'")
+  '';
+};
+```
+
+**Notes:**
+- The Masa readiness assertion pins the semantic difference between the two probes,
+  so a regression that made `--readiness` pass without a database cannot go unnoticed.
+  `isMasa` is read off the image — `mkLuceeDockerImage` records it as `luceeIsMasa` —
+  so projects never restate it. It is skipped for non-Masa images, where `--readiness`
+  is defined as `--liveness` and legitimately passes.
+- `diskSize` defaults high on purpose. A NixOS test VM's disk defaults to 1024 MiB,
+  which a real Lucee image will overflow while podman unpacks it.
+- Requires the `kvm` system feature by default — the same one `mkLuceeDockerImage`
+  already needs for its build-time warmup, so any builder that can build your
+  image can run this test. Set `requireKvm = false` to fall back to slow TCG
+  emulation.
+- Guard it with `lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux` if your flake
+  uses `eachDefaultSystem`, since NixOS tests need a Linux guest.
 
 ---
 
@@ -382,24 +515,29 @@ initScript = pkgs.writeShellScriptBin "init-lucee" ''
 
 ### CI/CD Integration
 
-#### GitHub Actions Workflow
+Express your whole pipeline as flake outputs and any Nix-native CI can run it —
+no bespoke workflow steps, and `nix flake check` gives developers the same
+verdict locally that CI will give them.
 
-A complete CI pipeline example for Lucee applications with health checks and container registry publishing. See the [full example workflow](./doc/examples/full/.github/workflows/ci.yml) for a complete GitHub Actions configuration.
-
-**Key Features:**
-- **Nix Flake Validation**: Ensures your flake configuration is valid and properly formatted
-- **Docker Build**: Builds your application container using Nix
-- **Health Checks**: Validates container startup, database connectivity, and application initialization
-- **GHCR Publishing**: Automatically publishes images to GitHub Container Registry on push
-- **Multi-Environment**: Supports different branch-based deployments (main, staging, production)
-
-**Required GitHub Secrets:**
-```bash
-DATABASE_HOST=your-db-host.com
-DATABASE_PORT=5432
-DATABASE_USERNAME=your-db-user
-DATABASE_PASSWORD=your-db-password
+```nix
+checks = pkgs.mkLuceeChecks {
+  src = ./.;
+  name = project.name;
+  image = dockerImage;
+};
 ```
+
+That gives you formatting enforcement and a full image boot test. See
+[`mkLuceeChecks`](#mkluceechecks) for the parts you can swap or add to.
+
+Then point CI at `packages.<system>.*` and `checks.<system>.*`:
+
+```bash
+nix flake check -L
+```
+
+See [`doc/ci.md`](./doc/ci.md) for what belongs in the build versus at deploy
+time, and how to wire this up on GitHub Actions or Gradient.
 
 #### Multi-Stage Deployment
 

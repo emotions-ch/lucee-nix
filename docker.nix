@@ -38,28 +38,37 @@ let
   '';
 
   healthCheckScript = pkgs.writeShellScript "health-check.sh" ''
-    #!${pkgs.dash}
-    set -e
+    set -eu
 
+    liveness() {
+      curl -fsS --max-time 10 "http://localhost:8888/health/" | grep -q "OK"
+    }
+
+    readiness() {
     ${
       if isMasa then
         ''
           # For Masa CMS, check for "Document Moved" from root, this means all masa initialization has worked
-          if curl --max-time 15 "http://localhost:8888/" 2>/dev/null | grep -q "Document Moved"; then
-            exit 0
-          else
-            exit 1
-          fi
+          curl -sS --max-time 15 "http://localhost:8888/" 2>/dev/null | grep -q "Document Moved"
         ''
       else
         ''
-          curl -f --max-time 10 "http://localhost:8888/health/"
+          liveness
         ''
     }
+    }
+
+    case "''${1:---readiness}" in
+      --liveness) liveness ;;
+      --readiness) readiness ;;
+      *)
+        echo "usage: health-check.sh [--liveness|--readiness]" >&2
+        exit 2
+        ;;
+    esac
   '';
 
   buildTimeSetupScript = pkgs.writeShellScript "build-setup.sh" ''
-    #!${pkgs.dash}
     set -euo pipefail
 
     echo "=== Setting up Lucee for production deployment ==="
@@ -73,16 +82,13 @@ let
     ) extensions}
 
     mkdir -p /opt/lucee/webapps/health
+    cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm
+
     cp ${cfConfigJSON} /opt/lucee/lucee-server/deploy/.CFConfig.json
-    ${
-      pkgs.lib.optionalString (isMasa == false) "cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm"
-    }
     cp ${healthCheckScript} /opt/lucee/health-check.sh
     cp ${loggingProperties} /opt/lucee/conf/logging.properties
 
     chmod +x /opt/lucee/health-check.sh
-    chown -R lucee:lucee /opt/lucee
-    chown -R lucee:lucee /app
 
     # warmup
     export CATALINA_HOME=${CATALINA_HOME}
@@ -91,11 +97,15 @@ let
     export CLASSPATH=${CLASSPATH}
     export LUCEE_ENABLE_WARMUP=1
     $CATALINA_BASE/bin/catalina.sh run
+
+    # Must run *after* the warmup: catalina runs as root here and materializes
+    # /opt/lucee/{server,work,conf/Catalina} as root:root 0750, which the
+    # runtime user (config.User = "lucee") could then not read.
+    chown -R lucee:lucee /opt/lucee /app
     echo "=== Lucee setup completed ==="
   '';
 
   containerInitScript = pkgs.writeShellScriptBin "container-init.sh" ''
-    #!${pkgs.dash}
     set -euo pipefail
 
     echo "Starting ${project} Lucee Container..."
@@ -144,71 +154,82 @@ let
   '';
 
 in
-pkgs.dockerTools.buildImage {
-  inherit tag name;
+# luceeIsMasa is attached the same way buildImage attaches imageName/imageTag:
+  # consumers (mkLuceeImageTest) need to know which readiness semantics this image
+  # has, and asking the image beats making every project restate it.
+pkgs.dockerTools.buildImage
+  {
+    inherit tag name;
 
-  # Create a non-root user and run build-time setup
-  runAsRoot = ''
-    #!${pkgs.runtimeShell}
-    ${pkgs.dockerTools.shadowSetup}
-    groupadd -r lucee
-    useradd -r -g lucee -d /opt/lucee -s ${pkgs.lib.getExe pkgs.bash} lucee
-    mkdir -p /opt/lucee /app
-    chown lucee:lucee /opt/lucee
+    # Create a non-root user and run build-time setup
+    runAsRoot = ''
+      #!${pkgs.runtimeShell}
+      ${pkgs.dockerTools.shadowSetup}
+      groupadd -r lucee
+      useradd -r -g lucee -d /opt/lucee -s ${pkgs.lib.getExe pkgs.bash} lucee
+      mkdir -p /opt/lucee /app
+      chown lucee:lucee /opt/lucee
 
-    echo "=== Running Lucee Build-Time Setup ==="
-    ${buildTimeSetupScript}
-  '';
+      echo "=== Running Lucee Build-Time Setup ==="
+      ${buildTimeSetupScript}
+    '';
 
-  copyToRoot = pkgs.buildEnv {
-    name = "container-root";
-    paths = with pkgs; [
-      dash
-      coreutils
-      curl
-      gawk
-      gnugrep
-      gnused
-      procps
-      gettext
+    copyToRoot = pkgs.buildEnv {
+      name = "container-root";
+      paths = with pkgs; [
+        dockerTools.binSh
+        dash
+        coreutils
+        curl
+        gawk
+        gnugrep
+        gnused
+        procps
+        gettext
 
-      # Application files
-      javaPackage
-      lucee
+        # Application files
+        javaPackage
+        lucee
 
-      # Application wwwroot directory
-      (pkgs.runCommand "copy-wwwroot" { } ''
-        mkdir -p $out/app
-        cp -r ${webapp}/** $out/app/
-      '')
-    ];
-  };
-
-  config = {
-    Cmd = [ "${containerInitScript}/bin/container-init.sh" ];
-    ExposedPorts = {
-      "8888/tcp" = { };
-    };
-    Env = [
-      "JAVA_HOME=${pkgs.openjdk25}"
-      "PATH=/bin:${pkgs.openjdk25}/bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin"
-      "CATALINA_HOME=${lucee}"
-      "CATALINA_BASE=/opt/lucee"
-    ];
-    User = "lucee";
-    WorkingDir = "/opt/lucee";
-
-    # Health check configuration
-    Healthcheck = {
-      Test = [
-        "CMD"
-        "/opt/lucee/health-check.sh"
+        # Application wwwroot directory
+        (pkgs.runCommand "copy-wwwroot" { } ''
+          mkdir -p $out/app
+          cp -r ${webapp}/** $out/app/
+        '')
       ];
-      Interval = 30000000000; # 30 seconds in nanoseconds
-      Timeout = 15000000000; # 15 seconds in nanoseconds
-      Retries = 3;
-      StartPeriod = 20000000000; # 20 seconds in nanoseconds
     };
+
+    config = {
+      Cmd = [ "${containerInitScript}/bin/container-init.sh" ];
+      ExposedPorts = {
+        "8888/tcp" = { };
+      };
+      Env = [
+        "JAVA_HOME=${pkgs.openjdk25}"
+        "PATH=/bin:${pkgs.openjdk25}/bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin"
+        "CATALINA_HOME=${lucee}"
+        "CATALINA_BASE=/opt/lucee"
+      ];
+      User = "lucee";
+      WorkingDir = "/opt/lucee";
+
+      # Health check configuration. Readiness, not liveness: an unhealthy
+      # container here means "not fit to serve traffic", which for Masa includes
+      # having reached the database.
+      Healthcheck = {
+        Test = [
+          "CMD"
+          "/opt/lucee/health-check.sh"
+          "--readiness"
+        ];
+        Interval = 30000000000; # 30 seconds in nanoseconds
+        Timeout = 15000000000; # 15 seconds in nanoseconds
+        Retries = 3;
+        StartPeriod = 20000000000; # 20 seconds in nanoseconds
+      };
+    }
+    // imageConfig;
   }
-  // imageConfig;
+  // {
+  luceeIsMasa = isMasa;
 }
