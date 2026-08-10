@@ -193,7 +193,7 @@ mkLuceeDockerImage {
   webapp;                                   # Path to webapp directory (required)
   isMasa ? false;                           # Required for Masa CMS applications
   LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m";     # JVM options
-  javaPackage ? pkgs.openjdk25;             # Java runtime package
+  javaPackage ? pkgs.openjdk25_headless;    # Java runtime package
   tag ? "latest";                           # Docker image tag
   name ? project;                           # Docker image name
   imageConfig ? {};                         # Additional Docker image configuration
@@ -209,15 +209,23 @@ mkLuceeDockerImage {
 - **`webapp`** (path, required): Path to directory containing your CFML application files
 - **`isMasa`** (boolean, optional): Enable Masa CMS-specific optimizations (cache directories, permissions)
 - **`LUCEE_JAVA_OPTS`** (string, optional): JVM memory and runtime options
-- **`javaPackage`** (package, optional): Java runtime package to use
+- **`javaPackage`** (package, optional): Java runtime package to use. Defaults to
+  `openjdk25_headless`, which drops the gtk3/cups/X11 tail from the image closure.
+  It is built with `--disable-headful`, so `java.desktop`/AWT is absent — if your
+  application uses CFML image functions (`cfimage`, `imageRead`, …), pass
+  `javaPackage = pkgs.openjdk25` instead
 - **`tag`** (string, optional): Docker image tag for versioning
 - **`name`** (string, optional): Docker image repository name
 - **`imageConfig`** (attrset, optional): Additional Docker image configuration [Docker image configuration](#docker-configuration)
 
-**Returns:** A Docker image derivation ready for container deployment.
+**Returns:** A `dockerTools.streamLayeredImage` derivation — an *executable script* that
+writes the image tarball to stdout, not the tarball itself. Nothing multi-hundred-MB ever
+lands in the Nix store, and the closure is split into content-addressed layers so a
+redeploy only transfers what actually changed. Load it with `./result | docker load`
+(see [Container Deployment](#container-deployment)).
 
 **Container Features:**
-- **Security**: Runs as non-root `lucee` user (UID 1000)
+- **Security**: Runs as non-root `lucee` user (UID/GID 999)
 - **Health Checks**: two probes, see [Liveness vs. readiness](#liveness-vs-readiness)
 - **Signal Handling**: Proper SIGTERM/SIGINT handling for graceful shutdown
 - **Configuration**: CFConfig JSON deployment with environment substitution
@@ -367,10 +375,10 @@ checks.image-health = pkgs.mkLuceeImageTest {
   is defined as `--liveness` and legitimately passes.
 - `diskSize` defaults high on purpose. A NixOS test VM's disk defaults to 1024 MiB,
   which a real Lucee image will overflow while podman unpacks it.
-- Requires the `kvm` system feature by default — the same one `mkLuceeDockerImage`
-  already needs for its build-time warmup, so any builder that can build your
-  image can run this test. Set `requireKvm = false` to fall back to slow TCG
-  emulation.
+- Requires the `kvm` system feature by default. `mkLuceeDockerImage` itself no
+  longer does — its build-time warmup runs under `proot` rather than in a VM — so
+  a builder can produce your image and still be unable to run this test. Set
+  `requireKvm = false` to fall back to slow TCG emulation.
 - Guard it with `lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux` if your flake
   uses `eachDefaultSystem`, since NixOS tests need a Linux guest.
 
@@ -470,9 +478,10 @@ A basic flake providing nothing but `dockerImage` output. [docker example](./doc
 ##### Container Deployment
 
 ```bash
-# Build and load image
+# Build and load image. `result` is a script that streams the image to stdout,
+# not a tarball, so pipe it rather than redirecting into docker.
 nix build .#dockerImage
-docker load < result
+./result | docker load
 
 # Run with environment configuration
 docker run -d \

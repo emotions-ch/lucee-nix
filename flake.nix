@@ -62,11 +62,11 @@
             , webapp
             , isMasa ? false
             , LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m"
-            , javaPackage ? final.openjdk25
+            , javaPackage ? final.openjdk25_headless
             , tag ? "latest"
             , name ? project
             , imageConfig ? { }
-            , # pkgs.dockerTools.buildImage.config for stuff like labels
+            , # pkgs.dockerTools.streamLayeredImage.config for stuff like labels
             }:
             import ./docker.nix {
               pkgs = final;

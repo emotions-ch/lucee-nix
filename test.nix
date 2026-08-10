@@ -22,8 +22,8 @@
 let
   inherit (pkgs) lib;
 
-  # Never hardcode this: buildImage lowercases `name`, and podman only skips the
-  # registry if the ref matches the tarball's RepoTag exactly.
+  # Never hardcode this: streamLayeredImage lowercases `name`, and podman only
+  # skips the registry if the ref matches the image's RepoTag exactly.
   imageRef = "${image.imageName}:${image.imageTag}";
   unit = "${backend}-${containerName}.service";
 
@@ -47,7 +47,7 @@ let
     nodes.machine = { ... }: {
       virtualisation = {
         # None of these are optional. diskSize defaults to 1024 MiB, and a
-        # multi-hundred-MB image tarball unpacks to several GB in podman's
+        # multi-hundred-MB image unpacks to several GB in podman's
         # store; the default single core plus a JVM boot runs close to the
         # test driver's timeouts.
         inherit memorySize diskSize cores;
@@ -56,7 +56,9 @@ let
           inherit backend;
           containers.${containerName} = {
             image = imageRef;
-            imageFile = image; # `<backend> load -i` in ExecStartPre, no registry
+            # streamLayeredImage yields a script, not a tarball: this pipes it
+            # into `<backend> load` in ExecStartPre. No registry either way.
+            imageStream = image;
             pull = "never";
             ports = [ "127.0.0.1:${toString port}:${toString port}" ];
             environment = {

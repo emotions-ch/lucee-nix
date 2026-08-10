@@ -86,10 +86,10 @@ from Gradient's own binary cache via its deployment module.
 
 Two caveats specific to hosted runners:
 
-- `mkLuceeImageTest` needs `/dev/kvm`. So does `mkLuceeDockerImage` itself, via the
-  build-time warmup, so if your image builds on a runner the test will run there
-  too. If you land on a runner without it, set `requireKvm = false` and accept
-  slow TCG emulation.
+- `mkLuceeImageTest` needs `/dev/kvm`. `mkLuceeDockerImage` no longer does — the
+  build-time warmup runs under `proot`, not in a VM — so a runner can build your
+  image and still fail to run the test. If you land on one without `/dev/kvm`, set
+  `requireKvm = false` and accept slow TCG emulation.
 - If your database is on a private network, a hosted runner cannot reach it —
   which is the usual reason the old "run the container against the real database"
   step was quietly broken. The hermetic test has no such problem.

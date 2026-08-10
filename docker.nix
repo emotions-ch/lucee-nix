@@ -1,16 +1,16 @@
-{ pkgs
-, lucee
-, extensions
-, cfConfig
-, project
-, webapp
-, isMasa
-, LUCEE_JAVA_OPTS
-, javaPackage
-, tag
-, name
-, imageConfig
-,
+{
+  pkgs,
+  lucee,
+  extensions,
+  cfConfig,
+  project,
+  webapp,
+  isMasa,
+  LUCEE_JAVA_OPTS,
+  javaPackage,
+  tag,
+  name,
+  imageConfig,
 }:
 
 let
@@ -72,8 +72,16 @@ let
     set -euo pipefail
 
     echo "=== Setting up Lucee for production deployment ==="
-    mkdir -p /opt/lucee/{conf,webapps,logs,temp,work,lucee-server/deploy}
-    cp -r ${lucee}/* /opt/lucee/
+
+    # CATALINA_BASE only needs the writable pieces. bin/, lib/ and lucee/ stay in
+    # CATALINA_HOME (${lucee}), which conf/catalina.properties already points
+    # common.loader at. Copying the whole tree duplicated ~34MB into the one
+    # layer that changes on every build.
+    mkdir -p /opt/lucee/{lib,webapps,logs,temp,work,lucee-server/deploy}
+
+    install -d -m 0755 /opt/lucee/conf
+    install -m 0644 -t /opt/lucee/conf ${lucee}/conf/*
+
     ln -sf /app /opt/lucee/webapps/ROOT
 
     # Deploy Lucee extensions
@@ -84,11 +92,9 @@ let
     mkdir -p /opt/lucee/webapps/health
     cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm
 
-    cp ${cfConfigJSON} /opt/lucee/lucee-server/deploy/.CFConfig.json
-    cp ${healthCheckScript} /opt/lucee/health-check.sh
-    cp ${loggingProperties} /opt/lucee/conf/logging.properties
-
-    chmod +x /opt/lucee/health-check.sh
+    install -m 0644 ${cfConfigJSON} /opt/lucee/lucee-server/deploy/.CFConfig.json
+    install -m 0755 ${healthCheckScript} /opt/lucee/health-check.sh
+    install -m 0644 ${loggingProperties} /opt/lucee/conf/logging.properties
 
     # warmup
     export CATALINA_HOME=${CATALINA_HOME}
@@ -96,11 +102,11 @@ let
     export JAVA_HOME=${JAVA_HOME}
     export CLASSPATH=${CLASSPATH}
     export LUCEE_ENABLE_WARMUP=1
-    $CATALINA_BASE/bin/catalina.sh run
+    $CATALINA_HOME/bin/catalina.sh run
 
-    # Must run *after* the warmup: catalina runs as root here and materializes
-    # /opt/lucee/{server,work,conf/Catalina} as root:root 0750, which the
-    # runtime user (config.User = "lucee") could then not read.
+    # Must run *after* the warmup: catalina runs as (fake)root here and
+    # materializes /opt/lucee/{server,work,conf/Catalina} as root:root 0750,
+    # which the runtime user (config.User = "lucee") could then not read.
     chown -R lucee:lucee /opt/lucee /app
     echo "=== Lucee setup completed ==="
   '';
@@ -141,7 +147,7 @@ let
 
     _term() {
       echo "Received SIGTERM, shutting down gracefully..."
-      $CATALINA_BASE/bin/catalina.sh stop
+      $CATALINA_HOME/bin/catalina.sh stop
       exit 0
     }
     trap _term SIGTERM SIGINT
@@ -150,86 +156,96 @@ let
     echo "Java Options: $LUCEE_JAVA_OPTS"
     echo "Database Host: $DATABASE_HOST:$DATABASE_PORT"
 
-    exec $CATALINA_BASE/bin/catalina.sh run
+    exec $CATALINA_HOME/bin/catalina.sh run
   '';
 
+  containerRoot = pkgs.buildEnv {
+    name = "container-root";
+    paths = with pkgs; [
+      dockerTools.binSh
+      dash
+      coreutils
+      curl
+      gawk
+      gnugrep
+      gnused
+      procps
+      gettext
+
+      # Application files
+      javaPackage
+      lucee
+
+      # Application wwwroot directory
+      (pkgs.runCommand "copy-wwwroot" { } ''
+        mkdir -p $out/app
+        cp -r ${webapp}/** $out/app/
+      '')
+    ];
+  };
+
 in
-# luceeIsMasa is attached the same way buildImage attaches imageName/imageTag:
-  # consumers (mkLuceeImageTest) need to know which readiness semantics this image
+pkgs.dockerTools.streamLayeredImage {
+  inherit tag name;
+
+  contents = [ containerRoot ];
+
+  # The build-time warmup needs absolute paths (CATALINA_BASE=/opt/lucee is baked
+  # into the config it produces), so the plain fakeroot environment is not enough.
+  enableFakechroot = true;
+  fakeRootCommands = ''
+    # buildEnv links a top-level directory wholesale when exactly one package
+    # provides it, and gawk is the only one here shipping /etc. That leaves /etc
+    # as a symlink into the read-only store, which shadowSetup cannot write to -
+    # and neither can docker/podman, which bind-mount /etc/hosts and
+    # /etc/resolv.conf into the container at runtime. Materialize it.
+    if [ -L /etc ]; then
+      etc_src="$(readlink -f /etc)"
+      rm /etc
+      mkdir -m 0755 /etc
+      cp -aL --no-preserve=mode,ownership "$etc_src"/. /etc/
+      chown -R 0:0 /etc
+    fi
+
+    ${pkgs.dockerTools.shadowSetup}
+    groupadd -r -g 999 lucee
+    useradd -r -u 999 -g lucee -d /opt/lucee -s ${pkgs.lib.getExe pkgs.bash} lucee
+    mkdir -p /opt/lucee /app
+    chown lucee:lucee /opt/lucee
+
+    echo "=== Running Lucee Build-Time Setup ==="
+    ${buildTimeSetupScript}
+  '';
+
+  # Consumers (mkLuceeImageTest) need to know which readiness semantics this image
   # has, and asking the image beats making every project restate it.
-pkgs.dockerTools.buildImage
-  {
-    inherit tag name;
+  passthru.luceeIsMasa = isMasa;
 
-    # Create a non-root user and run build-time setup
-    runAsRoot = ''
-      #!${pkgs.runtimeShell}
-      ${pkgs.dockerTools.shadowSetup}
-      groupadd -r lucee
-      useradd -r -g lucee -d /opt/lucee -s ${pkgs.lib.getExe pkgs.bash} lucee
-      mkdir -p /opt/lucee /app
-      chown lucee:lucee /opt/lucee
-
-      echo "=== Running Lucee Build-Time Setup ==="
-      ${buildTimeSetupScript}
-    '';
-
-    copyToRoot = pkgs.buildEnv {
-      name = "container-root";
-      paths = with pkgs; [
-        dockerTools.binSh
-        dash
-        coreutils
-        curl
-        gawk
-        gnugrep
-        gnused
-        procps
-        gettext
-
-        # Application files
-        javaPackage
-        lucee
-
-        # Application wwwroot directory
-        (pkgs.runCommand "copy-wwwroot" { } ''
-          mkdir -p $out/app
-          cp -r ${webapp}/** $out/app/
-        '')
-      ];
+  config = {
+    Cmd = [ "${containerInitScript}/bin/container-init.sh" ];
+    ExposedPorts = {
+      "8888/tcp" = { };
     };
+    Env = [
+      "JAVA_HOME=${javaPackage}"
+      "PATH=/bin:${javaPackage}/bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin"
+      "CATALINA_HOME=${lucee}"
+      "CATALINA_BASE=/opt/lucee"
+    ];
+    User = "lucee";
+    WorkingDir = "/opt/lucee";
 
-    config = {
-      Cmd = [ "${containerInitScript}/bin/container-init.sh" ];
-      ExposedPorts = {
-        "8888/tcp" = { };
-      };
-      Env = [
-        "JAVA_HOME=${pkgs.openjdk25}"
-        "PATH=/bin:${pkgs.openjdk25}/bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.curl}/bin"
-        "CATALINA_HOME=${lucee}"
-        "CATALINA_BASE=/opt/lucee"
+    Healthcheck = {
+      Test = [
+        "CMD"
+        "/opt/lucee/health-check.sh"
+        "--readiness"
       ];
-      User = "lucee";
-      WorkingDir = "/opt/lucee";
-
-      # Health check configuration. Readiness, not liveness: an unhealthy
-      # container here means "not fit to serve traffic", which for Masa includes
-      # having reached the database.
-      Healthcheck = {
-        Test = [
-          "CMD"
-          "/opt/lucee/health-check.sh"
-          "--readiness"
-        ];
-        Interval = 30000000000; # 30 seconds in nanoseconds
-        Timeout = 15000000000; # 15 seconds in nanoseconds
-        Retries = 3;
-        StartPeriod = 20000000000; # 20 seconds in nanoseconds
-      };
-    }
-    // imageConfig;
+      Interval = 30000000000; # 30 seconds in nanoseconds
+      Timeout = 15000000000; # 15 seconds in nanoseconds
+      Retries = 3;
+      StartPeriod = 20000000000; # 20 seconds in nanoseconds
+    };
   }
-  // {
-  luceeIsMasa = isMasa;
+  // imageConfig;
 }
