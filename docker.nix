@@ -175,12 +175,6 @@ let
       # Application files
       javaPackage
       lucee
-
-      # Application wwwroot directory
-      (pkgs.runCommand "copy-wwwroot" { } ''
-        mkdir -p $out/app
-        cp -r ${webapp}/** $out/app/
-      '')
     ];
   };
 
@@ -210,8 +204,12 @@ pkgs.dockerTools.streamLayeredImage {
     ${pkgs.dockerTools.shadowSetup}
     groupadd -r -g 999 lucee
     useradd -r -u 999 -g lucee -d /opt/lucee -s ${pkgs.lib.getExe pkgs.bash} lucee
-    mkdir -p /opt/lucee /app
+    mkdir -p /opt/lucee
     chown lucee:lucee /opt/lucee
+
+    mkdir -m 0755 -p /app
+    cp -a ${webapp}/. /app/
+    chmod -R u+w /app
 
     echo "=== Running Lucee Build-Time Setup ==="
     ${buildTimeSetupScript}
