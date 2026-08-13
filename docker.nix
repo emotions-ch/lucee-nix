@@ -77,7 +77,7 @@ let
     # CATALINA_HOME (${lucee}), which conf/catalina.properties already points
     # common.loader at. Copying the whole tree duplicated ~34MB into the one
     # layer that changes on every build.
-    mkdir -p /opt/lucee/{lib,webapps,logs,temp,work,lucee-server/deploy}
+    mkdir -p /opt/lucee/{lib,webapps,logs,temp,work,server/lucee-server/deploy}
 
     install -d -m 0755 /opt/lucee/conf
     install -m 0644 -t /opt/lucee/conf ${lucee}/conf/*
@@ -86,13 +86,13 @@ let
 
     # Deploy Lucee extensions
     ${pkgs.lib.concatMapStringsSep "\n    " (
-      ext: "cp -f ${ext}/*.lex /opt/lucee/lucee-server/deploy/"
+      ext: "cp -f ${ext}/*.lex /opt/lucee/server/lucee-server/deploy/"
     ) extensions}
 
     mkdir -p /opt/lucee/webapps/health
     cp ${healthCheckFile} /opt/lucee/webapps/health/index.cfm
 
-    install -m 0644 ${cfConfigJSON} /opt/lucee/lucee-server/deploy/.CFConfig.json
+    install -m 0644 ${cfConfigJSON} /opt/lucee/server/lucee-server/deploy/.CFConfig.json
     install -m 0755 ${healthCheckScript} /opt/lucee/health-check.sh
     install -m 0644 ${loggingProperties} /opt/lucee/conf/logging.properties
 
