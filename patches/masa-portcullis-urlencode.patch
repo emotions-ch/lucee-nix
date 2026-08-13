@@ -1,0 +1,23 @@
+Use the core urlEncode() BIF instead of encodeForURL() in Portcullis
+
+Masa's Portcullis.removeNullChars() calls encodeForURL(), which Lucee only
+provides through the ESAPI extension. Our images ship a minimal extension set
+(see the `extensions` argument of mkLuceeDockerImage), so the function is
+undefined at runtime and every request that passes through Portcullis - i.e.
+all of them - blows up. urlEncode() is a core BIF and does the same job here,
+since the result is immediately urldecode()d again after stripping %00.
+
+Upstream commit this was extracted from:
+emotions-ch/praxisgemeinschaft-zuerichhorn.ch@fbfe177
+
+--- a/core/mura/Portcullis.cfc
++++ b/core/mura/Portcullis.cfc
+@@ -618,7 +618,7 @@
+
+ 	<cffunction name="removeNullChars" access="private" output="false">
+ 		<cfargument name="theString" type="string" required="true" />
+-		<cfreturn urldecode(replace(encodeForURL(arguments.theString),"%00","","all"))>
++		<cfreturn urldecode(replace(urlEncode(arguments.theString),"%00","","all"))>
+ 	</cffunction>
+
+ </cfcomponent>

@@ -33,6 +33,24 @@ let
     org.apache.catalina.core.ContainerBase.[Catalina].handlers = java.util.logging.ConsoleHandler
   '';
 
+  # Fixes Masa needs to run on our Lucee builds. Kept as patches rather than
+  # forked files so a Masa upgrade in a project fails loudly (patch refuses to
+  # apply) instead of silently reintroducing the bug.
+  # you should probably still install the extesion but for some reason it only seems to heppen in docker so like
+  # ¯\_(ツ)_/¯
+  masaPatches = [ ./patches/masa-portcullis-urlencode.patch ];
+
+  applyMasaPatches = pkgs.lib.concatMapStringsSep "\n"
+    (patchFile: ''
+      if ${pkgs.lib.getExe pkgs.patch} -p1 -d /app -R -f --dry-run --silent < ${patchFile} >/dev/null 2>&1; then
+        echo "  skip (already applied): ${baseNameOf patchFile}"
+      else
+        echo "  apply: ${baseNameOf patchFile}"
+        ${pkgs.lib.getExe pkgs.patch} -p1 -d /app < ${patchFile}
+      fi
+    '')
+    masaPatches;
+
   healthCheckFile = pkgs.writeText "health-index.cfm" ''
     <cfoutput>OK</cfoutput>
   '';
@@ -210,6 +228,11 @@ pkgs.dockerTools.streamLayeredImage {
     mkdir -m 0755 -p /app
     cp -a ${webapp}/. /app/
     chmod -R u+w /app
+
+    ${pkgs.lib.optionalString isMasa ''
+      echo "=== Applying Masa patches ==="
+      ${applyMasaPatches}
+    ''}
 
     echo "=== Running Lucee Build-Time Setup ==="
     ${buildTimeSetupScript}
