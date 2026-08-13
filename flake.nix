@@ -43,6 +43,7 @@
             , baseDir ? "ROOT"
             , port ? 8888
             , tomcatPackage ? luceeUtils.jar.lucee7-zero.tomcatPackage
+            , isMasa ? false
             ,
             }:
             luceeUtils.mkTomcatLucee {
@@ -51,6 +52,7 @@
                 port
                 baseDir
                 tomcatPackage
+                isMasa
                 ;
             };
 
@@ -60,7 +62,6 @@
             , cfConfig
             , project
             , webapp
-            , isMasa ? false
             , LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m"
             , javaPackage ? final.openjdk25_headless
             , tag ? "latest"
@@ -68,7 +69,7 @@
             , imageConfig ? { }
             , # pkgs.dockerTools.streamLayeredImage.config for stuff like labels
             }:
-            import ./docker.nix {
+            import ./docker {
               pkgs = final;
               inherit
                 lucee
@@ -76,7 +77,6 @@
                 cfConfig
                 project
                 webapp
-                isMasa
                 LUCEE_JAVA_OPTS
                 javaPackage
                 tag
@@ -86,7 +86,7 @@
             };
 
           # NixOS VM test that boots an mkLuceeDockerImage result and asserts Lucee serves.
-          mkLuceeImageTest = args: import ./test.nix ({ pkgs = final; } // args);
+          mkLuceeImageTest = args: import ./docker/test.nix ({ pkgs = final; } // args);
 
           # The standard `checks` output for a project. See ./checks.nix.
           mkLuceeChecks = args: import ./checks.nix ({ pkgs = final; } // args);
@@ -113,25 +113,7 @@
           # Eval the treefmt modules from ./treefmt.nix
           treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
-          # Smallest possible app that still exercises the whole image pipeline.
-          # No datasource, so nothing in it wants a database.
-          selfTestWebapp = pkgs.runCommand "lucee-selftest-wwwroot" { } ''
-            mkdir -p $out
-            printf '<cfoutput>SELFTEST #server.lucee.version#</cfoutput>' > $out/index.cfm
-          '';
-
-          selfTestImage = pkgs.mkLuceeDockerImage {
-            lucee = self.packages.${system}.stable;
-            extensions = [ ];
-            cfConfig = { };
-            project = "lucee-selftest";
-            # Fully qualified on purpose: a test VM has no search registries, so
-            # podman cannot resolve a short name.
-            name = "localhost/lucee-nix-selftest";
-            webapp = selfTestWebapp;
-            isMasa = false;
-            LUCEE_JAVA_OPTS = "-Xms64m -Xmx384m";
-          };
+          selfTest = import ./docker/selftest.nix { inherit pkgs; };
         in
         {
           # Development shell
@@ -177,33 +159,24 @@
           # for `nix flake check`
           checks = {
             formatting = treefmtEval.config.build.check self;
+
+            tomcat-masa-rewrite = pkgs.runCommand "check-masa-rewrite" { } ''
+              masa=${selfTest.lucee}
+              plain=${self.packages.${system}.stable}
+
+              grep -q 'rewrite.RewriteValve' "$masa/conf/server.xml"
+              grep '<Valve ' "$masa/conf/server.xml" | head -1 | grep -q 'rewrite.RewriteValve'
+              test -f "$masa/conf/Catalina/127.0.0.1/rewrite.config"
+
+              ! grep -q 'RewriteValve' "$plain/conf/server.xml"
+              ! test -e "$plain/conf/Catalina"
+
+              touch $out
+            '';
           }
           # NixOS tests need a linux guest; eachDefaultSystem also covers darwin.
           // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-            # Regression coverage for mkLuceeDockerImage itself. Without this the
-            # only signal that the image still boots comes from a downstream
-            # project's CI, which needs secrets and a reachable database.
-            image-health = pkgs.mkLuceeImageTest {
-              name = "lucee-nix-image-health";
-              image = selfTestImage;
-              diskSize = 10240;
-              extraTestScript = ''
-                with subtest("ROOT context renders CFML"):
-                    machine.succeed(
-                        "curl -fsS --max-time 10 http://127.0.0.1:8888/ | grep -q SELFTEST"
-                    )
-
-                with subtest("lucee state is owned by the runtime user"):
-                    # The warmup runs as root at build time; if its output is not
-                    # chowned afterwards, uid 999 cannot read its own config.
-                    owners = machine.succeed(
-                        "podman exec --user root lucee stat -c '%n %U' "
-                        "/opt/lucee /opt/lucee/conf /opt/lucee/work /opt/lucee/server"
-                    )
-                    print(owners)
-                    assert " root" not in owners, f"root-owned state:\n{owners}"
-              '';
-            };
+            inherit (selfTest) image-health;
           };
         }
       )

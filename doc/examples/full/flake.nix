@@ -23,7 +23,7 @@
             ];
           };
 
-          lucee = pkgs.mkTomcatLucee { };
+          lucee = pkgs.mkTomcatLucee { isMasa = true; };
 
           startScript = pkgs.writeShellScriptBin "start-lucee" ''
             export CATALINA_HOME=${lucee}
@@ -167,7 +167,6 @@
               project
               ;
             webapp = ./wwwroot; # folder containing your index.cfm
-            isMasa = true;
             cfConfig = prodCfConfig;
 
             # for GHCR integration
@@ -184,7 +183,7 @@
           luceeManagerJson = pkgs.writeText ".lucee-manager.json" "${builtins.toJSON {
           project = project;
           domain = "${project}.local";
-          # nginx.templateFile = ./nginx.conf; # uncomment if you have specific needs for your reverse proxy, zb. MasaCMS Rewrite rules
+          # nginx.templateFile = ./nginx.conf; # uncomment if you have specific needs for your reverse proxy (MasaCMS rewriting is handled by isMasa)
         }}";
 
         in

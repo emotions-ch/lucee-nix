@@ -22,7 +22,7 @@ in
 }
 // lib.optionalAttrs (image != null) {
   # Boots the image and asserts Lucee serves. Hermetic, so it deliberately does
-  # not cover database connectivity - see ./test.nix.
+  # not cover database connectivity - see ./docker/test.nix.
 
   image-health = pkgs.mkLuceeImageTest (
     {

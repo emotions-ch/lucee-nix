@@ -18,6 +18,7 @@ A Nix flake, providing declarative infrastructure for [Lucee Server](https://www
    - [Development Setup](#development-setup)
    - [Production Deployment](#production-deployment)
 5. [Advanced Topics](#advanced-topics)
+   - [Masa SES URLs](#masa-ses-urls)
    - [lucee-manager integration](#integration-overview)
    - [CI/CD Integration](#cicd-integration)
 
@@ -43,10 +44,15 @@ The Lucee-Nix flake provides a modern, infrastructure-as-code approach to deploy
 ```
 lucee-nix/
 ├── flake.nix           # Main flake configuration and overlay definition
-├── docker.nix          # Docker image building functionality
+├── docker/             # Docker image building functionality
+│   ├── default.nix     # Image builder
+│   ├── test.nix        # NixOS VM test that boots a built image
+│   └── patches/        # Fixes applied to the webapp of a Masa image
 ├── lucee/              # Core Lucee packaging logic (directory, not single file)
 │   ├── default.nix     # Lucee builder functions
-│   └── definitions.nix # Lucee JAR definitions and versions
+│   ├── definitions.nix # Lucee JAR definitions and versions
+│   ├── rewrite.nix     # Masa SES RewriteValve wiring
+│   └── masa-rewrite.config # Masa SES rewrite rules
 ├── extensions/         # Extension management system
 │   ├── default.nix     # Extension builder functions
 │   └── definitions.nix # Pre-defined extension catalog
@@ -76,6 +82,7 @@ mkTomcatLucee {
   port ? 8888;                   # HTTP port for development server  
   luceeJar ? "lucee7-zero";      # Lucee JAR version identifier
   tomcatPackage ? <auto>;        # Tomcat package (auto-selected based on luceeJar)
+  isMasa ? false;                # Masa CMS SES URL rewriting
 }
 ```
 
@@ -87,12 +94,18 @@ mkTomcatLucee {
   - `"lucee7-zero"` (default) - Lucee 7.0.1.100 without bundled extensions
 - **`tomcatPackage`** (package, optional): Tomcat package to use. Auto-selected based on `luceeJar` compatibility:
   - Lucee 7.x → Tomcat 11 (Java 25 compatible)
+- **`isMasa`** (boolean, optional): Mark this instance as a Masa CMS one. Adds the
+  [Masa SES rewrite](#masa-ses-urls) to `server.xml`, so the instance resolves
+  `/kontakt/` without a reverse proxy in front of it, and is what
+  [`mkLuceeDockerImage`](#mkluceedockerimage) reads to decide whether it is building
+  a Masa image. Defaults to `false`.
 
 **Returns:** A derivation containing a configured Tomcat+Lucee server instance.
 
 **Passthru Attributes:**
 - `tomcatPackage` - The Tomcat package used
 - `javaVersion` - Required Java version for compatibility
+- `isMasa` - Whether this is a Masa CMS instance
 
 **Example:**
 ```nix
@@ -191,7 +204,6 @@ mkLuceeDockerImage {
   cfConfig;                                 # CFConfig configuration object (required)
   project;                                  # Project name (required)
   webapp;                                   # Path to webapp directory (required)
-  isMasa ? false;                           # Required for Masa CMS applications
   LUCEE_JAVA_OPTS ? "-Xms64m -Xmx512m";     # JVM options
   javaPackage ? pkgs.openjdk25_headless;    # Java runtime package
   tag ? "latest";                           # Docker image tag
@@ -202,12 +214,15 @@ mkLuceeDockerImage {
 
 **Parameters:**
 
-- **`lucee`** (derivation, required): Tomcat+Lucee instance from `mkTomcatLucee`
+- **`lucee`** (derivation, required): Tomcat+Lucee instance from `mkTomcatLucee`.
+  Masa mode is read off it — build it with `mkTomcatLucee { isMasa = true; }` and
+  the image applies the `docker/patches/` fixes to the webapp, creates the writable
+  `/app/sites/*/cache` directories and switches the readiness probe to the
+  database-dependent one
 - **`extensions`** (list, optional): List of Lucee extension derivations to install
 - **`cfConfig`** (attrset, required): CFConfig configuration object (see [CFConfig Schema](#cfconfig-schema))
 - **`project`** (string, required): Project identifier used for naming and configuration
 - **`webapp`** (path, required): Path to directory containing your CFML application files
-- **`isMasa`** (boolean, optional): Enable Masa CMS-specific optimizations (cache directories, permissions)
 - **`LUCEE_JAVA_OPTS`** (string, optional): JVM memory and runtime options
 - **`javaPackage`** (package, optional): Java runtime package to use. Defaults to
   `openjdk25_headless`, which drops the gtk3/cups/X11 tail from the image closure.
@@ -235,11 +250,11 @@ redeploy only transfers what actually changed. Load it with `./result | docker l
 **Example:**
 ```nix
 dockerImage = pkgs.mkLuceeDockerImage {
+  # a Masa image is one whose `lucee` was built with `isMasa = true`
   inherit lucee extensions project;
   webapp = ./wwwroot;
   cfConfig = prodCfConfig;
-  isMasa = true;
-  
+
   # Container registry configuration
   name = "ghcr.io/myorg/myproject";
   imageConfig = {
@@ -498,6 +513,32 @@ docker run -d \
 
 ## Advanced Topics
 
+### Masa SES URLs
+
+Masa serves every page through `/index.cfm/<path>` but links to it as `/<path>`, and
+redirects `/index.cfm/kontakt` to `/kontakt/`. Something has to map the public URL
+back onto `index.cfm` or the site 404s on its own links. `mkTomcatLucee { isMasa = true; }`
+does that inside Tomcat, with a `RewriteValve` declared as the first valve of the
+`<Host>` in `server.xml` and the rules from [`lucee/masa-rewrite.config`](./lucee/masa-rewrite.config)
+installed as `conf/<Engine>/<Host>/rewrite.config`.
+
+Everything that exists on disk is served untouched — the rules only fire for paths
+that resolve to no file and no directory. `/index.cfm`, `/health`, `/rest` and
+anything ending in `.cfm`, `.cfml` or `.cfc` are excluded outright.
+
+Two things to know before editing the rules:
+
+- Tomcat evaluates `RewriteCond` patterns with `Matcher.matches()`, so a pattern has
+  to match the **whole** test string. An Apache-style partial pattern silently never
+  matches, which looks exactly like a working rule until something 404s.
+- `%{REQUEST_URI}` is percent-encoded and `%{REQUEST_PATH}` is decoded. The `-f`/`-d`
+  resource tests need the decoded one, or assets with a space or an umlaut in their
+  name miss their own file.
+
+It is a no-op behind a proxy that already rewrites: nginx hands Tomcat
+`/index.cfm/kontakt/`, which the first condition excludes, so there is no double
+rewrite and keeping an existing `nginx.conf` is harmless.
+
 ### Multi-Project Development with lucee-manager (highly recommended)
 
 For development with multiple Lucee projects, [lucee-manager](https://github.com/emotions-ch/lucee-manager/) provides **reverse proxy management** and **dynamic port allocation**.
@@ -512,7 +553,8 @@ The lucee-nix flake automatically integrates with lucee-manager through a config
 luceeManagerJson = pkgs.writeText "lucee-manager.json" (builtins.toJSON {
   project = "myproject";
   domain = "myproject.devlocal.emotions.ch"; # *.devlocal.emotions.ch resolves as 127.0.0.1
-  # Optional: Custom nginx template for special routing needs
+  # Optional: Custom nginx template for special routing needs. Masa rewriting is
+  # not one of them - see [Masa SES URLs](#masa-ses-urls).
   nginx.templateFile = ./nginx.conf;  
 });
 ```

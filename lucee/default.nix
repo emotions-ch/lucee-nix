@@ -35,6 +35,8 @@ let
   mkLuceeWithTomcat10 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat10; });
   mkLuceeWithTomcat11 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat11; });
 
+  rewrite = import ./rewrite.nix { };
+
   jar = import ./definitions.nix {
     inherit mkLuceeVersion;
     inherit mkLuceeWithTomcat11;
@@ -53,6 +55,7 @@ let
     , port ? 8888
     , luceeJar
     , tomcatPackage ? jar.${luceeJar}.tomcatPackage
+    , isMasa ? false
     ,
     }:
     let
@@ -63,6 +66,11 @@ let
     in
     tomcatPackage.overrideAttrs (oldAttrs: {
       name = "${oldAttrs.pname}-${oldAttrs.version}-${jar.${luceeJar}.name}-${jar.${luceeJar}.version}";
+
+      # mkLuceeDockerImage reads this instead of taking its own isMasa argument -
+      # the instance knows what it is, projects should not have to say it twice.
+      passthru = (oldAttrs.passthru or { }) // { inherit isMasa; };
+
       postFixup = (oldAttrs.postFixup or "") + ''
           cp -f ${lucee-dockerfiles}/config/tomcat/${tomcatMajorVersion}/* $out/conf/
 
@@ -70,6 +78,8 @@ let
         substituteInPlace $out/conf/server.xml \
           --replace '/var/www/' '${baseDir}' \
           --replace 'port="8888"' 'port="${toString port}"'
+
+        ${lib.optionalString isMasa (rewrite.installMasaRewrite { conf = "$out/conf"; })}
 
         mkdir -p $out/lucee
         ln -s ${jar.${luceeJar}}/lucee.jar $out/lucee/lucee.jar

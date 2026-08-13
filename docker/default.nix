@@ -4,7 +4,6 @@
 , cfConfig
 , project
 , webapp
-, isMasa
 , LUCEE_JAVA_OPTS
 , javaPackage
 , tag
@@ -15,6 +14,8 @@
 
 let
   cfConfigJSON = pkgs.writeText "cfconfig-prod-template.json" (builtins.toJSON cfConfig);
+
+  isMasa = lucee.isMasa or false;
 
   CATALINA_HOME = lucee;
   JAVA_HOME = javaPackage;
@@ -97,8 +98,12 @@ let
     # layer that changes on every build.
     mkdir -p /opt/lucee/{lib,webapps,logs,temp,work,server/lucee-server/deploy}
 
+    # Copied recursively, not with `install -t ... conf/*`: a lucee built with
+    # `mkTomcatLucee { isMasa = true; }` carries the SES rewrite rules in a
+    # conf/Catalina/ subdirectory, which install refuses to take.
     install -d -m 0755 /opt/lucee/conf
-    install -m 0644 -t /opt/lucee/conf ${lucee}/conf/*
+    cp -RL --no-preserve=mode,ownership ${lucee}/conf/. /opt/lucee/conf/
+    chmod -R u+w /opt/lucee/conf
 
     ln -sf /app /opt/lucee/webapps/ROOT
 
