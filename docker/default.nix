@@ -151,6 +151,13 @@ let
     export LOG_LEVEL="''${LOG_LEVEL:-INFO}"
     export TZ="''${TZ:-Europe/Zurich}"
 
+    # Cloud Run maps a Secret Manager secret onto a single env var and cannot
+    # split it, so S3/GCS HMAC credentials arrive as one "ACCESSKEY:SECRET" value.
+    if [ -n "''${LUCEE_S3_HMAC:-}" ]; then
+      export LUCEE_S3_ACCESSKEYID="''${LUCEE_S3_HMAC%%:*}"
+      export LUCEE_S3_SECRETACCESSKEY="''${LUCEE_S3_HMAC#*:}"
+    fi
+
     export CATALINA_HOME=${CATALINA_HOME}
     export CATALINA_BASE=${CATALINA_BASE}
     export JAVA_HOME=${JAVA_HOME}
