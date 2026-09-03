@@ -102,7 +102,7 @@
           mkLuceeChecks = mkLuceeChecks;
         };
     in
-    flake-utils.lib.eachDefaultSystem
+    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ]
       (
         system:
         let
@@ -166,7 +166,7 @@
               touch $out
             '';
           }
-          # NixOS tests need a linux guest; eachDefaultSystem also covers darwin.
+          # NixOS tests need a linux guest; the system list also covers darwin.
           // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
             inherit (selfTest) image-health;
           };
