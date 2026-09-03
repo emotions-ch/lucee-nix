@@ -1,7 +1,9 @@
 # Regression coverage for mkLuceeDockerImage itself. Without this the only
 # signal that the image still boots comes from a downstream project's CI, which
 # needs secrets and a reachable database.
-{ pkgs }:
+{ pkgs
+, luceeJar ? "lucee7-zero"
+}:
 
 let
   # Smallest possible app that still exercises the whole image pipeline.
@@ -32,7 +34,7 @@ let
   # database-dependent readiness - so the image test covers that one. The plain
   # instance is covered without a VM by the `tomcat-masa-rewrite` check.
   lucee = pkgs.mkTomcatLucee {
-    luceeJar = "lucee7-zero";
+    inherit luceeJar;
     isMasa = true;
   };
 

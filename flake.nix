@@ -94,6 +94,7 @@
         {
           # Here we pass `final` (the final pkgs set) to our generator
           mkTomcatLucee = mkTomcatLucee final;
+          luceeJars = luceeUtils.jar;
           mkLuceeExtension = extensionUtils.mkLuceeExtension;
           luceeExtensions = extensionUtils.extensionDefinitions;
           mkLuceeDockerImage = mkLuceeDockerImage;
@@ -152,6 +153,7 @@
           # `packages` may only hold flat derivations
           legacyPackages = {
             lucee-extensions = pkgs.luceeExtensions;
+            lucee-jars = pkgs.luceeJars;
           };
 
           formatter = treefmtEval.config.build.wrapper;

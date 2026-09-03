@@ -37,12 +37,15 @@ let
 
   rewrite = import ./rewrite.nix { };
 
-  jar = import ./definitions.nix {
-    inherit mkLuceeVersion;
-    inherit mkLuceeWithTomcat11;
-    inherit mkLuceeWithTomcat10;
-    inherit mkLuceeWithTomcat9;
-  };
+  jar =
+    import ./definitions.nix
+      {
+        inherit mkLuceeVersion;
+        inherit mkLuceeWithTomcat11;
+        inherit mkLuceeWithTomcat10;
+        inherit mkLuceeWithTomcat9;
+      }
+    // (import ./source.nix { inherit lib pkgs; }).jars;
 
   # webapp must be in directory named webapps/ROOT
   examplePage = pkgs.runCommand "lucee-webapp-root" { } ''
