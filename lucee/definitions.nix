@@ -1,18 +1,20 @@
-# Lucee Definitions - Auto-generated
-# Generated at: 2026-07-02 00:31:13 UTC
-# DO NOT EDIT MANUALLY - Use lucee-updater tool
+# Prebuilt CDN jar definitions ("-bin" outputs).
+#
+# Lucee >= 7 is built from source (see source.nix / source-definitions.nix);
+# older versions - and prebuilt-only artifacts like BETA builds - are offered
+# here as -bin attrs fetched from cdn.lucee.org. Hand-maintained; the hashes
+# make any upstream change loud.
 
-{
-  mkLuceeVersion,
-  mkLuceeWithTomcat11,
-  mkLuceeWithTomcat10,
-  mkLuceeWithTomcat9,
+{ mkLuceeVersion
+, mkLuceeWithTomcat11
+, mkLuceeWithTomcat10
+, mkLuceeWithTomcat9
+,
 }:
 
 {
 
-
-  lucee7_1-BETA-zero = mkLuceeVersion {
+  lucee7_1-BETA-zero-bin = mkLuceeVersion {
     name = "lucee-zero";
     description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
     version = "7.1.0.71-BETA";
@@ -20,7 +22,7 @@
     javaVersion = 25;
   };
 
-  lucee7_1-BETA = mkLuceeVersion {
+  lucee7_1-BETA-bin = mkLuceeVersion {
     name = "lucee";
     description = "Lucee jar file without dependencies Lucee needs to run";
     version = "7.1.0.71-BETA";
@@ -28,7 +30,7 @@
     javaVersion = 25;
   };
 
-  lucee7_1-BETA-light = mkLuceeVersion {
+  lucee7_1-BETA-light-bin = mkLuceeVersion {
     name = "lucee-light";
     description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
     version = "7.1.0.71-BETA";
@@ -36,33 +38,57 @@
     javaVersion = 25;
   };
 
-
-  lucee7-zero = mkLuceeVersion {
+  # 7.0.0.x still uses the old UUID-based Require-Extension format, which the
+  # source build's cache seeding does not support - prebuilt only.
+  lucee7_0_0_395-zero-bin = mkLuceeVersion {
     name = "lucee-zero";
     description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
-    version = "7.0.4.34";
-    sha256 = "sha256-EgIAzyjWlAwZz7+rdBk3naS3/+QLUzSGClOaagy+8bc=";
+    version = "7.0.0.395";
+    sha256 = "sha256-v+OYTPXHhZDEFTSpybfvPszAnwl1N6/LcOGx1P0IeSw=";
     javaVersion = 25;
   };
 
-  lucee7 = mkLuceeVersion {
+  lucee7_0_0_395-bin = mkLuceeVersion {
     name = "lucee";
     description = "Lucee jar file without dependencies Lucee needs to run";
-    version = "7.0.4.34";
-    sha256 = "sha256-pFM/Ilt1+lFDAYD+oiugv2Vzx/py7QiwusFleM6Z6Rc=";
+    version = "7.0.0.395";
+    sha256 = "sha256-H5S1nWj0sRSXiuwBacKNb+6gN7JQ7njjZMjPh+c90wE=";
     javaVersion = 25;
   };
 
-  lucee7-light = mkLuceeVersion {
+  lucee7_0_0_395-light-bin = mkLuceeVersion {
     name = "lucee-light";
     description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
-    version = "7.0.4.34";
-    sha256 = "sha256-eN6IWCkn8nmZamJe4YorTjIoIQUZT57j1YgXcIiLTcE=";
+    version = "7.0.0.395";
+    sha256 = "sha256-wEdsL17IjLY2Jb3B5HWw/jWCuhgp/2Z981dQVkgfD8Q=";
     javaVersion = 25;
   };
 
+  lucee7_0_0_202-zero-bin = mkLuceeVersion {
+    name = "lucee-zero";
+    description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
+    version = "7.0.0.202";
+    sha256 = "sha256-JNvEb1aOx2tLH3rDaARRr8CoFKntFvHUFz2GNKhhkHY=";
+    javaVersion = 25;
+  };
 
-  lucee6-zero = mkLuceeVersion {
+  lucee7_0_0_202-bin = mkLuceeVersion {
+    name = "lucee";
+    description = "Lucee jar file without dependencies Lucee needs to run";
+    version = "7.0.0.202";
+    sha256 = "sha256-z9B7z3ZmElgLRYfKXvZakRE2Jwv/LXM64qSsz8jfs6A=";
+    javaVersion = 25;
+  };
+
+  lucee7_0_0_202-light-bin = mkLuceeVersion {
+    name = "lucee-light";
+    description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
+    version = "7.0.0.202";
+    sha256 = "sha256-TbSuzwKvmu6MkciX4DeuygrUAnfNZuAFLr3qrR5tgpk=";
+    javaVersion = 25;
+  };
+
+  lucee6-zero-bin = mkLuceeVersion {
     name = "lucee-zero";
     description = "Lucee Jar file without any Extensions bundled or doc and admin bundles, \"Lucee zero\"";
     version = "6.2.7.16";
@@ -70,7 +96,7 @@
     javaVersion = 25;
   };
 
-  lucee6 = mkLuceeVersion {
+  lucee6-bin = mkLuceeVersion {
     name = "lucee";
     description = "Lucee jar file without dependencies Lucee needs to run";
     version = "6.2.7.16";
@@ -78,15 +104,12 @@
     javaVersion = 25;
   };
 
-  lucee6-light = mkLuceeVersion {
+  lucee6-light-bin = mkLuceeVersion {
     name = "lucee-light";
     description = "Lucee Jar file without any Extensions bundled, \"Lucee light\"";
     version = "6.2.7.16";
     sha256 = "sha256-W2kPWzmrub48XGYiBA4+ukeNiCdjsI2vw5FVPQ6F0Ec=";
     javaVersion = 25;
   };
-
-
-
 
 }

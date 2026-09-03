@@ -50,7 +50,9 @@ lucee-nix/
 │   └── patches/        # Fixes applied to the webapp of a Masa image
 ├── lucee/              # Core Lucee packaging logic (directory, not single file)
 │   ├── default.nix     # Lucee builder functions
-│   ├── definitions.nix # Lucee JAR definitions and versions
+│   ├── definitions.nix # Prebuilt CDN jar definitions and versions
+│   ├── source.nix      # Build Lucee from source (github:lucee/Lucee)
+│   ├── source-definitions.nix # Source build pins (rev + hashes)
 │   ├── rewrite.nix     # Masa SES RewriteValve wiring
 │   └── masa-rewrite.config # Masa SES rewrite rules
 ├── extensions/         # Extension management system
@@ -90,8 +92,20 @@ mkTomcatLucee {
 
 - **`baseDir`** (string, optional): Directory in `webapps` containing your web application files. Defaults to `"ROOT"`.
 - **`port`** (integer, optional): HTTP port for the development server. Defaults to `8888`.
-- **`luceeJar`** (string, optional): Lucee JAR version to use. Available options:
-  - `"lucee7-zero"` (default) - Lucee 7.0.1.100 without bundled extensions
+- **`luceeJar`** (string, optional): Lucee JAR version to use. Every entry
+  comes in three flavors: bare (full jar), `-light` (no extensions) and
+  `-zero` (no extensions, no admin/doc). Available options:
+  - `"lucee7-zero"` (default) - the current Stable release per
+    download.lucee.org (7.1.0.204), built from source (see
+    `doc/updating.md`); `"lucee7_0"` and `"lucee7_1"` track the newest
+    release of those lines
+  - `"lucee7_0_1_100-zero"` ... `"lucee7_1_0_204-zero"` - every release
+    above 7.0.0, pinned by version, all built from source
+  - `"lucee7_0_0_395-zero-bin"`, `"lucee6-zero-bin"`, ... - prebuilt jars
+    from cdn.lucee.org for versions the source build does not cover
+    (7.0.0.x uses the old extension pinning format, 6.x is legacy)
+  - `"lucee7_1-BETA-zero-bin"` (and `-light-bin` / `-bin`) - prebuilt BETA
+    jars, which only exist as CDN binaries
 - **`tomcatPackage`** (package, optional): Tomcat package to use. Auto-selected based on `luceeJar` compatibility:
   - Lucee 7.x → Tomcat 11 (Java 25 compatible)
 - **`isMasa`** (boolean, optional): Mark this instance as a Masa CMS one. Adds the
