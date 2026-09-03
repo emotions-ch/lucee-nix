@@ -124,12 +124,11 @@
             buildInputs = with pkgs; [
               jq
               openjdk
-              ghc
             ];
 
             shellHook = ''
-              echo "  nix fmt             - Format Nix and Haskell files"
-              echo "  nix run .#lucee-updater - Update Lucee definitions"
+              echo "  nix fmt                    - Format Nix files"
+              echo "  ./tools/update-lucee.sh    - Update Lucee source pins (see doc/updating.md)"
               echo ""
             '';
           };
@@ -139,15 +138,6 @@
             default = self.packages.${system}.stable;
 
             stable = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
-
-            # Lucee definitions updater
-            #lucee-updater = pkgs.haskellPackages.callCabal2nix "lucee-updater" ./tools/lucee-updater { };
-            #update-lucee = pkgs.writeShellScriptBin "update-lucee" ''
-            #  echo "🔄 Updating Lucee definitions with Haskell tool..."
-            #  echo ""
-            #  echo "y" | ${self.packages.${system}.lucee-updater}/bin/lucee-updater "$@"
-            #  rm ./*.tmp
-            #'';
           };
 
           # `packages` may only hold flat derivations

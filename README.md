@@ -59,8 +59,9 @@ lucee-nix/
 │   ├── default.nix     # Extension builder functions
 │   └── definitions.nix # Pre-defined extension catalog
 ├── tools/              # Development and maintenance tools
-│   └── lucee-updater/  # Tool for updating Lucee definitions
+│   └── update-lucee.sh # Generate source build pins (see doc/updating.md)
 ├── doc/                # Documentation and examples
+│   ├── updating.md     # How to update the Lucee pins
 │   └── examples/       # Complete usage examples
 │       ├── devshell/
 │       ├── docker/
