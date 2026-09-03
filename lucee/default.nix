@@ -30,21 +30,10 @@ let
       '';
     };
 
-  # Helper functions to create Lucee versions with specific Tomcat versions
-  mkLuceeWithTomcat9 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat9; });
-  mkLuceeWithTomcat10 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat10; });
-  mkLuceeWithTomcat11 = args: mkLuceeVersion (args // { tomcatPackage = pkgs.tomcat11; });
-
   rewrite = import ./rewrite.nix { };
 
   jar =
-    import ./definitions.nix
-      {
-        inherit mkLuceeVersion;
-        inherit mkLuceeWithTomcat11;
-        inherit mkLuceeWithTomcat10;
-        inherit mkLuceeWithTomcat9;
-      }
+    import ./definitions.nix { inherit mkLuceeVersion; }
     // (import ./source.nix { inherit lib pkgs; }).jars;
 
   # webapp must be in directory named webapps/ROOT
@@ -98,5 +87,4 @@ in
     mkTomcatLucee
     lucee-dockerfiles
     ;
-  inherit mkLuceeWithTomcat9 mkLuceeWithTomcat10 mkLuceeWithTomcat11;
 }

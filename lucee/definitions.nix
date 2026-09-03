@@ -5,12 +5,7 @@
 # here as -bin attrs fetched from cdn.lucee.org. Hand-maintained; the hashes
 # make any upstream change loud.
 
-{ mkLuceeVersion
-, mkLuceeWithTomcat11
-, mkLuceeWithTomcat10
-, mkLuceeWithTomcat9
-,
-}:
+{ mkLuceeVersion }:
 
 {
 
