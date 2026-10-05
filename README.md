@@ -15,7 +15,7 @@ A Nix flake, providing declarative infrastructure for [Lucee Server](https://www
    - [Environment Variables](#environment-variables)
    - [Docker Configuration](#docker-configuration)
 4. [Examples & Use Cases](#examples--use-cases)
-   - [Development Setup](#development-setup)
+   - [Quick Start](#quick-start)
    - [Production Deployment](#production-deployment)
 5. [Advanced Topics](#advanced-topics)
    - [Masa SES URLs](#masa-ses-urls)
@@ -58,14 +58,13 @@ lucee-nix/
 ├── extensions/         # Extension management system
 │   ├── default.nix     # Extension builder functions
 │   └── definitions.nix # Pre-defined extension catalog
+├── template/           # `nix flake init` templates
+│   ├── default/        # plain Lucee project
+│   └── masa/           # MasaCMS project
 ├── tools/              # Development and maintenance tools
 │   └── update-lucee.sh # Generate source build pins (see doc/updating.md)
-├── doc/                # Documentation and examples
-│   ├── updating.md     # How to update the Lucee pins
-│   └── examples/       # Complete usage examples
-│       ├── devshell/
-│       ├── docker/
-│       └── full/
+├── doc/                # Documentation
+│   └── updating.md     # How to update the Lucee pins
 └── treefmt.nix         # Code formatting configuration
 ```
 
@@ -491,21 +490,24 @@ imageConfig = {
 
 ## Examples & Use Cases
 
-for a full example (Masa Project with devshell & deployment) see [full flake example](./doc/examples/full/flake.nix)
+### Quick Start
 
-### Development Setup
+Scaffold a new project (devshell, docker image and checks) from a template:
 
-#### Basic Development Environment
+```bash
+# plain Lucee project
+nix flake init -t github:emotions-ch/lucee-nix#lucee-default
 
-A basic flake for `nix develop` use only. [devshell example](./doc/examples/devshell/flake.nix)
+# MasaCMS project
+nix flake init -t github:emotions-ch/lucee-nix#lucee-masa
+```
+
+See [`template/default/flake.nix`](./template/default/flake.nix) and
+[`template/masa/flake.nix`](./template/masa/flake.nix) for what they generate.
 
 ### Production Deployment
 
-#### Production Docker Image
-
-A basic flake providing nothing but `dockerImage` output. [docker example](./doc/examples/docker/flake.nix)
-
-##### Container Deployment
+#### Container Deployment
 
 ```bash
 # Build and load image. `result` is a script that streams the image to stdout,

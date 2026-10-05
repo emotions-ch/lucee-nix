@@ -1,5 +1,5 @@
 {
-  description = "My Lucee Project - Development";
+  description = "Lucee - Development Environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -11,21 +11,18 @@
   };
 
   outputs =
-    { nixpkgs
-    , flake-utils
-    , lucee-nix
-    , ...
-    }:
-    flake-utils.lib.eachDefaultSystem (
+    { nixpkgs, ... }@inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ lucee-nix.overlays.default ];
+          overlays = [
+            inputs.lucee-nix.overlays.default
+          ];
         };
 
-        # Create Lucee server instance
-        lucee = pkgs.mkTomcatLucee { };
+        lucee = pkgs.mkTomcatLucee { luceeJar = "lucee7-zero"; };
 
         startScript = pkgs.writeShellScriptBin "start-lucee" ''
           export CATALINA_HOME=${lucee}
@@ -78,54 +75,107 @@
             ln -sf "$PWD/wwwroot" $CATALINA_BASE/webapps/ROOT
 
             chmod -R u+w "$CATALINA_BASE"
-
           else
             echo "Lucee instance already exists at $CATALINA_BASE"
             echo "Use 'start-lucee' to start the server"
           fi
         '';
 
-        # Project configuration
         project = "myproject";
-
-        # Development database configuration
         cfConfigJSON = pkgs.writeText ".CFConfig.json" "${builtins.toJSON cfConfig}";
+
+        # https://docs.lucee.org/recipes/configuration.html
         cfConfig = {
-          dataSources.${project} = {
-            name = project;
-            class = "org.postgresql.Driver";
-            bundleName = "org.postgresql.jdbc";
-            dsn = "jdbc:postgresql://{host}:{port}/{database}";
-            username = "devuser";
-            password = "\${DATASOURCE_SECRET}";
-            host = "localhost";
-            database = project;
-            port = "5432";
-            # ... additional configuration
+          dataSources = {
+            ${project} = {
+              name = project;
+              class = "org.postgresql.Driver";
+              bundleName = "org.postgresql.jdbc";
+              dsn = "jdbc:postgresql://{host}:{port}/{database}";
+              username = "devuser";
+              password = "\${DATASOURCE_SECRET}"; # database password must be placed in a file called `${host}.secret` eg. localhost.secret
+              host = "localhost";
+              database = project;
+              port = "5432";
+            };
           };
         };
 
-        # extensions requiured by your application
-        extensions = with pkgs.luceeExtensions; [
-          "org.postgresql.jdbc"
-          image-extension
-          administrator-extension
+        # production config for dockerImage
+        # Inherit all database config from development except username, password, and host
+        prodCfConfig = {
+          dataSources = {
+            ${project} = (
+              cfConfig.dataSources.${project}
+              // {
+                username = "\${DATABASE_USERNAME}";
+                password = "\${DATABASE_PASSWORD}";
+                host = "\${DATABASE_HOST}";
+                port = "\${DATABASE_PORT}";
+              }
+            );
+          };
+        };
+
+        # to see all avialable extensions run:
+        # nix eval github:emotions-ch/lucee-nix#lucee-extensions --apply builtins.attrNames
+        extensions = [
+          pkgs.luceeExtensions.org_postgresql_jdbc
+          pkgs.luceeExtensions.image_extension
         ];
 
+        dockerImage = pkgs.mkLuceeDockerImage {
+          inherit
+            lucee
+            extensions
+            project
+            ;
+          webapp = ./wwwroot; # folder containing your index.cfm
+          cfConfig = prodCfConfig;
+
+          # for GHCR integration
+          name = "ghcr.io/example/${project}";
+          imageConfig = {
+            Labels = {
+              "org.opencontainers.image.source" = "https://github.com/example/${project}";
+            };
+          };
+        };
       in
       {
         devShells.default = pkgs.mkShell {
+          name = "${project}-nix-dev";
+
           buildInputs = with pkgs; [
-            # Runtime
             openjdk25
 
-            # Project scripts
             startScript
             initScript
           ];
+
+          shellHook = ''
+            echo "  start-lucee"
+            echo ""
+          '';
         };
 
-        packages.default = lucee;
+        packages = {
+          lucee = startScript;
+          default = startScript;
+
+          # Docker image for production deployment
+          inherit dockerImage;
+        };
+
+        formatter = pkgs.nixfmt-tree;
+
+        # `nix flake check`: formatting, plus (on linux) a NixOS VM test that
+        # boots the image and asserts Lucee serves.
+        checks = pkgs.mkLuceeChecks {
+          src = ./.;
+          name = project;
+          image = if pkgs.stdenv.hostPlatform.isLinux then dockerImage else null;
+        };
       }
     );
 }

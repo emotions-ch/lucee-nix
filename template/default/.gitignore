@@ -1,0 +1,4 @@
+result
+lucee-instance/
+*.secret
+production.env

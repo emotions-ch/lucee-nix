@@ -175,5 +175,7 @@
     // {
       # Expose overlay at flake level
       overlays.default = luceeOverlay;
+
+      templates = import ./template { inherit self; };
     };
 }
