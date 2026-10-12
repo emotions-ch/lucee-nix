@@ -84,3 +84,28 @@ in `lucee/definitions.nix` and TOFU the hash the same way.
 The runtime extension catalog (`.lex` files placed into Docker images) is
 still pinned by URL+hash from ext.lucee.org and updated by hand; the hashes
 make any upstream change loud.
+
+## MasaCMS (`masa/versions.nix`)
+
+Masa releases are the stable tags of [MasaCMS/MasaCMS](https://github.com/MasaCMS/MasaCMS),
+pinned in `masa/versions.nix` (version → hash + the `masa/patches/` it needs) and
+turned into `pkgs.masaCMS.masa<version>` attrs by `masa/definitions.nix`. The newest
+pin is `pkgs.masaCMS.default`.
+
+```sh
+./tools/update-masa.sh --list                         # stable tags on GitHub
+./tools/update-masa.sh > masa/versions.nix           # regenerate the default set
+./tools/update-masa.sh 7.6.2                          # one tag; merge into versions.nix
+```
+
+The default set is every stable tag from 7.2 on plus the last 7.1 build
+(7.1 has ~430 build tags; add older ones by name if a project needs them).
+Like `update-lucee.sh` the script never writes files itself. It prefetches
+each tag, which gives the hash and lets it decide which patches the tree
+needs; a patch whose target is there but which no longer applies is an
+error. Then:
+
+```sh
+nix build .#legacyPackages.x86_64-linux.masa.default
+nix flake check   # the image-health VM test boots an image on `default`
+```

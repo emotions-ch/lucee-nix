@@ -6,31 +6,21 @@
 }:
 
 let
-  # Smallest possible app that still exercises the whole image pipeline.
-  # No datasource, so nothing in it wants a database.
+  # Smallest possible overlay that still exercises the whole image pipeline. It
+  # sits on the managed Masa, but replaces Masa's Application.cfc so nothing
+  # wants a database.
   webapp = pkgs.runCommand "lucee-selftest-wwwroot" { } ''
-    mkdir -p $out/assets $out/core/mura
+    mkdir -p $out/assets
 
+    printf 'component {}' > $out/Application.cfc
     printf '<cfoutput>SELFTEST #server.lucee.version# PATH_INFO=[#cgi.path_info#] QS=[#cgi.query_string#]</cfoutput>' \
       > $out/index.cfm
 
     printf 'STATICFILE' > $out/assets/static.txt
     printf 'STATICSPACE' > "$out/assets/a file.txt"
-
-    # patch(1) fails the build if the Masa patch target is missing. The leading
-    # blank line is the hunk's first context line, so it has to be there.
-    cat > $out/core/mura/Portcullis.cfc <<'CFC'
-
-    	<cffunction name="removeNullChars" access="private" output="false">
-    		<cfargument name="theString" type="string" required="true" />
-    		<cfreturn urldecode(replace(encodeForURL(arguments.theString),"%00","","all"))>
-    	</cffunction>
-
-    </cfcomponent>
-    CFC
   '';
 
-  # Masa is the larger shape - patches, cache dirs, SES rewrite,
+  # Masa is the larger shape - managed Masa merge, cache dirs, SES rewrite,
   # database-dependent readiness - so the image test covers that one. The plain
   # instance is covered without a VM by the `tomcat-masa-rewrite` check.
   lucee = pkgs.mkTomcatLucee {
@@ -108,11 +98,9 @@ in
               "curl -fsS --max-time 10 http://127.0.0.1:8888/health/ | grep -q OK"
           )
 
-      with subtest("masa patches were applied to /app"):
-          machine.succeed(
-              "podman exec lucee grep -q 'urlEncode(arguments.theString)' "
-              "/app/core/mura/Portcullis.cfc"
-          )
+      with subtest("the managed Masa is merged under the overlay"):
+          machine.succeed("podman exec lucee test -f /app/core/mura/utility.cfc")
+          machine.succeed("podman exec lucee grep -q SELFTEST /app/index.cfm")
     '';
   };
 }

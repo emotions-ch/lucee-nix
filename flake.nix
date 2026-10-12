@@ -36,6 +36,10 @@
             inherit (final) lib;
             pkgs = final;
           };
+          masaUtils = import ./masa {
+            inherit (final) lib;
+            pkgs = final;
+          };
 
           mkTomcatLucee =
             pkgs:
@@ -44,6 +48,8 @@
             , port ? 8888
             , tomcatPackage ? luceeUtils.jar.lucee7-zero.tomcatPackage
             , isMasa ? false
+            , # Masa the project's wwwroot is overlaid on; null means wwwroot is all of Masa.
+              masa ? masaUtils.versions.default
             ,
             }:
             luceeUtils.mkTomcatLucee {
@@ -53,6 +59,7 @@
                 baseDir
                 tomcatPackage
                 isMasa
+                masa
                 ;
             };
 
@@ -100,6 +107,8 @@
           mkLuceeDockerImage = mkLuceeDockerImage;
           mkLuceeImageTest = mkLuceeImageTest;
           mkLuceeChecks = mkLuceeChecks;
+          masaCMS = masaUtils.versions;
+          inherit (masaUtils) mkMasa mkMasaWebroot;
         };
     in
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ]
@@ -144,6 +153,7 @@
           legacyPackages = {
             lucee-extensions = pkgs.luceeExtensions;
             lucee-jars = pkgs.luceeJars;
+            masa = pkgs.masaCMS;
           };
 
           formatter = treefmtEval.config.build.wrapper;
@@ -151,20 +161,11 @@
           # for `nix flake check`
           checks = {
             formatting = treefmtEval.config.build.check self;
-
-            tomcat-masa-rewrite = pkgs.runCommand "check-masa-rewrite" { } ''
-              masa=${selfTest.lucee}
-              plain=${self.packages.${system}.stable}
-
-              grep -q 'rewrite.RewriteValve' "$masa/conf/server.xml"
-              grep '<Valve ' "$masa/conf/server.xml" | head -1 | grep -q 'rewrite.RewriteValve'
-              test -f "$masa/conf/Catalina/127.0.0.1/rewrite.config"
-
-              ! grep -q 'RewriteValve' "$plain/conf/server.xml"
-              ! test -e "$plain/conf/Catalina"
-
-              touch $out
-            '';
+          }
+          // import ./masa/checks.nix {
+            inherit pkgs;
+            masaLucee = selfTest.lucee;
+            plainLucee = self.packages.${system}.stable;
           }
           # NixOS tests need a linux guest; the system list also covers darwin.
           // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {

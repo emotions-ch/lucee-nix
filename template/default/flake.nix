@@ -36,6 +36,8 @@
             echo "Using existing Lucee instance at $CATALINA_BASE"
           fi
 
+          ${pkgs.lib.getExe lucee.webrootTool} link "$PWD/wwwroot" "$CATALINA_BASE/webapps/ROOT"
+
           if [ ! -f ${cfConfig.dataSources.${project}.host}.secret ]; then
             echo "${cfConfig.dataSources.${project}.host}.secret not found!"
           else
@@ -71,8 +73,7 @@
             mkdir -p "$CATALINA_BASE/"
             cp -r ${lucee}/** "$CATALINA_BASE/"
 
-            mkdir -p "$CATALINA_BASE/webapps/"
-            ln -sf "$PWD/wwwroot" $CATALINA_BASE/webapps/ROOT
+            ${pkgs.lib.getExe lucee.webrootTool} link "$PWD/wwwroot" "$CATALINA_BASE/webapps/ROOT"
 
             chmod -R u+w "$CATALINA_BASE"
           else
@@ -151,6 +152,7 @@
 
             startScript
             initScript
+            lucee.webrootTool
           ];
 
           shellHook = ''

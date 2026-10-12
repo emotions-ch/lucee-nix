@@ -25,6 +25,8 @@
         lucee = pkgs.mkTomcatLucee {
           luceeJar = "lucee7-zero";
           isMasa = true;
+          # wwwroot is overlaid on a Masa managed by lucee-nix; pin one with e.g.
+          # masa = pkgs.masaCMS.masa7_6_1;
         };
 
         startScript = pkgs.writeShellScriptBin "start-lucee" ''
@@ -38,6 +40,8 @@
           else
             echo "Using existing Lucee instance at $CATALINA_BASE"
           fi
+
+          ${pkgs.lib.getExe lucee.webrootTool} link "$PWD/wwwroot" "$CATALINA_BASE/webapps/ROOT"
 
           if [ ! -f ${cfConfig.dataSources.${project}.host}.secret ]; then
             echo "${cfConfig.dataSources.${project}.host}.secret not found!"
@@ -75,8 +79,7 @@
             mkdir -p "$CATALINA_BASE/"
             cp -r ${lucee}/** "$CATALINA_BASE/"
 
-            mkdir -p "$CATALINA_BASE/webapps/"
-            ln -sf "$PWD/wwwroot" $CATALINA_BASE/webapps/ROOT
+            ${pkgs.lib.getExe lucee.webrootTool} link "$PWD/wwwroot" "$CATALINA_BASE/webapps/ROOT"
 
             chmod -R u+w "$CATALINA_BASE"
             cp -f ${luceeManagerJson} $CATALINA_BASE/conf/lucee-manager.json
@@ -159,6 +162,8 @@
           pkgs.luceeExtensions.org_lucee_mssql
           pkgs.luceeExtensions.image_extension
           pkgs.luceeExtensions.compress_extension
+          # Masa's emailUtility uses <cfpop>; Lucee 7.1 moved the mail tags into this extension
+          pkgs.luceeExtensions.mail_extension
         ];
 
         # bound here rather than inline in `packages` so `checks` can reuse it
@@ -168,7 +173,7 @@
             extensions
             project
             ;
-          webapp = ./wwwroot; # folder containing your index.cfm
+          webapp = ./wwwroot; # your overrides, merged over the managed Masa
           cfConfig = prodCfConfig;
 
           # for GHCR integration
@@ -198,6 +203,7 @@
 
             startScript
             initScript
+            lucee.webrootTool
           ];
 
           shellHook = ''

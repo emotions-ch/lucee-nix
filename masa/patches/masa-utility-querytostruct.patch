@@ -1,0 +1,40 @@
+Drop utility.queryToStruct(), which collides with Lucee's queryToStruct() BIF
+
+Masa up to 7.4.4 declares a queryToStruct() method on core/mura/utility.cfc,
+with the same name as a Lucee built-in function. A project running vendored
+Masa 7.4.1 on our Lucee 7 builds had to comment it out by hand to get rid of a
+compile error. Nothing in Masa calls the method and upstream dropped it in 7.4.5,
+so tools/update-masa.sh only lists this patch for versions that still declare it.
+
+Extracted from:
+emotions-ch/praxisgemeinschaft-zuerichhorn.ch@54a76b4 ("fix syntax errors")
+
+--- a/core/mura/utility.cfc
++++ b/core/mura/utility.cfc
+@@ -549,16 +549,16 @@
+ 		return aReturn;
+ 	}
+ 
+-	function queryToStruct( qry ) {
+-
+-		var str = {};
+-
+-		for(var i = 1;i <= qry.recordcount;i++) {
+-			str[i] = queryRowToStruct( qry,i);
+-		}
+-
+-		return str;
+-	}
++	// function queryToStruct( qry ) {
++	//
++	// 	var str = {};
++	//
++	// 	for(var i = 1;i <= qry.recordcount;i++) {
++	// 		str[i] = queryRowToStruct( qry,i);
++	// 	}
++	//
++	// 	return str;
++	// }
+ 
+ 	function queryToArray( qry,primarykey="" ) {
+ 
