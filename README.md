@@ -569,6 +569,28 @@ when tracking `default`).
   `isMasa` also sets `<Resources allowLinking="true" />` in `conf/context.xml`, without
   which Tomcat refuses to serve the symlinked static files.
 
+  Things to know about the symlink tree:
+  - Writing to a Masa file fails with "Permission denied" (the store is read-only); the
+    fix is to put your own copy of that file into `wwwroot`.
+  - Lucee's `fileCopy`/`fileMove` replace a link with a regular file instead of writing
+    through it. The next `link` adopts that file: identical content is dropped, changed
+    content replaces the `wwwroot` copy, and a line on stderr names the path.
+  - Every store file has mtime 1 and Lucee only recompiles a cached class when the
+    source mtime changed, so `link` clears `lucee-server/context/cfclasses` whenever the
+    linked Masa differs from the one recorded in `webapps/.lucee-webroot-masa`.
+  - `directoryDelete(recurse=true)` on a project directory empties it in `wwwroot`,
+    leaves the empty directory behind and throws; Masa itself never deletes site or
+    theme directories, so this only matters for your own code.
+  - Masa's core auto-updater (`allowautoupdates`, off by default) replaces links with
+    real files, which the next start adopts into `wwwroot` as permanent overrides,
+    detaching the project from the managed Masa. Leave it off.
+  - `nix run` roots nothing: after `nix-collect-garbage` the tree can dangle until the
+    next `start-lucee` rebuilds it. `lucee-webroot link` while Tomcat is serving the
+    tree gives transient 404s.
+  - `prune` is safe for the files Masa writes at runtime (`plugins/*`,
+    `config/settings.ini.cfm`, `core/vendor/cfformprotect/cffp.ini.cfm`,
+    `modules/dynamic_entities/`): none of them exist in the Masa release.
+
 Migrating a project that vendors Masa: pick the matching version, then let
 `lucee-webroot prune wwwroot` list every file that only differs from Masa's copy in
 line endings or whitespace, and `lucee-webroot prune wwwroot --apply` delete them.

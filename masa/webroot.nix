@@ -30,7 +30,15 @@
   #
   # A file Masa creates inside a real directory (settings.ini.cfm on install,
   # plugins/mappings.cfm, ...) is moved into wwwroot by the next `link`, which
-  # is what an overlay's copy-up would have done.
+  # is what an overlay's copy-up would have done. Lucee's fileCopy/fileMove
+  # replace a symlink instead of writing through it, so a regular file can also
+  # turn up where wwwroot already has one; the runtime copy wins then, as it
+  # would have in an overlay.
+  #
+  # Store files all carry mtime 1, and Lucee only recompiles a class it finds
+  # on disk when the source mtime changed - so after a Masa bump it would keep
+  # serving the old compiled core. `link` records the Masa it linked and wipes
+  # the instance's class cache when that changes.
   #
   # `lucee-webroot prune <wwwroot> [--apply]` lists, and with --apply deletes,
   # wwwroot files that only differ from Masa's copy in line endings or
@@ -64,22 +72,33 @@
           while IFS= read -r -d "" rel; do
             rel=''${rel#./}
             dest="$wwwroot/$rel"
-            if [ -e "$dest" ] || [ -L "$dest" ]; then
-              echo "lucee-webroot: $rel exists in both $target and wwwroot, keeping the runtime copy as $rel.runtime" >&2
+            if [ -d "$dest" ] && [ ! -L "$dest" ]; then
+              echo "lucee-webroot: $rel is a directory in wwwroot, keeping the runtime file as $rel.runtime" >&2
               dest="$dest.runtime"
+            elif [ -e "$dest" ] || [ -L "$dest" ]; then
+              if cmp -s "$target/$rel" "$dest"; then
+                rm "$target/$rel"
+                continue
+              fi
+              echo "lucee-webroot: $rel was rewritten at runtime, replacing the wwwroot copy" >&2
+            elif [ -n "$masa" ] && cmp -s "$target/$rel" "$masa/$rel" 2>/dev/null; then
+              # same bytes as Masa's own file: not an override, nothing to keep
+              rm "$target/$rel"
+              continue
             else
               echo "lucee-webroot: adopting $rel into wwwroot"
             fi
             mkdir -p "$(dirname "$dest")"
-            mv "$target/$rel" "$dest"
+            mv -f "$target/$rel" "$dest"
           done < <(cd "$target" && find . -path ./WEB-INF -prune -o -type f -print0)
         }
 
+        # "$dir/." so a wwwroot directory that is itself a symlink is listed too.
         names() {
           local dir
           for dir in "$@"; do
             if [ -d "$dir" ]; then
-              find "$dir" -mindepth 1 -maxdepth 1 -printf '%f\0'
+              find "$dir/." -mindepth 1 -maxdepth 1 -printf '%f\0'
             fi
           done | sort -zu
         }
@@ -107,9 +126,21 @@
 
         link() {
           [ $# -eq 2 ] || usage
-          local wwwroot target=$2
+          local wwwroot target=$2 resolved
           wwwroot=$(realpath "$1")
           [ -d "$wwwroot" ] || { echo "lucee-webroot: $1 is not a directory" >&2; exit 1; }
+
+          # With a trailing slash a target that is still the old `ROOT -> wwwroot`
+          # symlink would be treated as a directory - and emptied.
+          while [ "$target" != "/" ] && [ "''${target%/}" != "$target" ]; do target=''${target%/}; done
+          # Resolve the parent only: a target that *is* the old symlink gets replaced.
+          resolved=$(realpath -m "$(dirname "$target")")/$(basename "$target")
+          case "$resolved" in
+            "$wwwroot" | "$wwwroot"/*)
+              echo "lucee-webroot: refusing to build the webroot inside wwwroot ($target)" >&2
+              exit 1
+              ;;
+          esac
 
           if [ -L "$target" ]; then
             rm "$target"
@@ -124,6 +155,17 @@
           else
             merge "$wwwroot" "$target" ""
             echo "lucee-webroot: $target = $wwwroot over $masa"
+
+            local marker classes
+            marker="$(dirname "$target")/.lucee-webroot-masa"
+            classes="$(dirname "$(dirname "$target")")/lucee-server/context/cfclasses"
+            if [ "$(cat "$marker" 2>/dev/null)" != "$masa" ]; then
+              if [ -d "$classes" ]; then
+                rm -rf "$classes"
+                echo "lucee-webroot: Masa changed, cleared the compiled class cache $classes"
+              fi
+              echo "$masa" > "$marker"
+            fi
 
             # An instance initialized before isMasa set allowLinking keeps its old
             # conf, and Tomcat then treats every symlinked file as missing.
