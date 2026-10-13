@@ -90,6 +90,13 @@
           fi
         '';
 
+        # Migrating a project that vendors Masa: lists the wwwroot files that are
+        # just Masa's own (compared against the `masa` pinned above, so pin the
+        # version the project vendors first); `-- --apply` deletes them.
+        purgeScript = pkgs.writeShellScriptBin "purge-masa" ''
+          exec ${pkgs.lib.getExe lucee.webrootTool} purge "$PWD/wwwroot" "$@"
+        '';
+
         project = "myproject";
         cfConfigJSON = pkgs.writeText ".CFConfig.json" "${builtins.toJSON cfConfig}";
 
@@ -204,6 +211,7 @@
             startScript
             initScript
             lucee.webrootTool
+            purgeScript
           ];
 
           shellHook = ''
@@ -214,6 +222,7 @@
         packages = {
           lucee = startScript;
           default = startScript;
+          purge-masa = purgeScript;
 
           # Docker image for production deployment of a masa application
           dockerImage = dockerImage;

@@ -25,6 +25,8 @@
         override (sites, themes, modules, config/settings.ini.cfm), overlaid on top
       - `git init && git add .` - flakes only see tracked files
       - put your database password in `<host>.secret` (see `cfConfig` in `flake.nix`)
+      - migrating a project that vendors Masa: `nix run .#purge-masa` lists its Masa files,
+        `nix run .#purge-masa -- --apply` deletes them
       - `nix develop`, then `start-lucee`
       - `nix build .#dockerImage` for the production image
     '';

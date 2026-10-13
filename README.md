@@ -587,14 +587,17 @@ when tracking `default`).
   - `nix run` roots nothing: after `nix-collect-garbage` the tree can dangle until the
     next `start-lucee` rebuilds it. `lucee-webroot link` while Tomcat is serving the
     tree gives transient 404s.
-  - `prune` is safe for the files Masa writes at runtime (`plugins/*`,
+  - `purge` is safe for the files Masa writes at runtime (`plugins/*`,
     `config/settings.ini.cfm`, `core/vendor/cfformprotect/cffp.ini.cfm`,
     `modules/dynamic_entities/`): none of them exist in the Masa release.
 
-Migrating a project that vendors Masa: pick the matching version, then let
-`lucee-webroot prune wwwroot` list every file that only differs from Masa's copy in
-line endings or whitespace, and `lucee-webroot prune wwwroot --apply` delete them.
-What is left is the project's overlay. `masa = null` keeps the old behaviour.
+Migrating a project that vendors Masa: pin the version it vendors (`wwwroot/box.json`
+says which) with `masa = pkgs.masaCMS.masa<version>`, then let
+`lucee-webroot purge wwwroot` list every file that only differs from Masa's copy in
+line endings or whitespace, and `lucee-webroot purge wwwroot --apply` delete them.
+The masa template exposes this as `nix run .#purge-masa` and
+`nix run .#purge-masa -- --apply`. What is left is the project's overlay.
+`masa = null` keeps the old behaviour.
 
 ### Masa SES URLs
 

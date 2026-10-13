@@ -110,9 +110,11 @@
       ! ${tool} link www www/sub 2>/dev/null
       test -f www/index.cfm
 
-      ${tool} prune www | grep -qx README.md
+      # purge: a dry run lists vendored Masa files, --apply deletes them
+      ${tool} purge www > purge.log
+      grep -qx README.md purge.log
       test -f www/README.md
-      ${tool} prune www --apply
+      ${tool} purge www --apply
       ! test -e www/README.md
       test -f www/index.cfm
 

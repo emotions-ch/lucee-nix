@@ -40,7 +40,7 @@
   # serving the old compiled core. `link` records the Masa it linked and wipes
   # the instance's class cache when that changes.
   #
-  # `lucee-webroot prune <wwwroot> [--apply]` lists, and with --apply deletes,
+  # `lucee-webroot purge <wwwroot> [--apply]` lists, and with --apply deletes,
   # wwwroot files that only differ from Masa's copy in line endings or
   # whitespace - for migrating projects that vendored the whole of Masa.
   mkWebrootTool =
@@ -61,7 +61,7 @@
 
         usage() {
           echo "usage: lucee-webroot link <wwwroot> <target>" >&2
-          echo "       lucee-webroot prune <wwwroot> [--apply]" >&2
+          echo "       lucee-webroot purge <wwwroot> [--apply]" >&2
           exit 2
         }
 
@@ -182,7 +182,7 @@
           fi
         }
 
-        prune() {
+        purge() {
           [ $# -ge 1 ] && [ $# -le 2 ] || usage
           local wwwroot=$1 apply=0 rel d
           [ "''${2:-}" = "--apply" ] && apply=1
@@ -210,7 +210,7 @@
 
         case "''${1:-}" in
           link) shift; link "$@" ;;
-          prune) shift; prune "$@" ;;
+          purge) shift; purge "$@" ;;
           *) usage ;;
         esac
       '';
