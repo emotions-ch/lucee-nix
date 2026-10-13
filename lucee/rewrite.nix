@@ -1,7 +1,7 @@
 {}:
 
 let
-  rewriteConfig = ./masa-rewrite.config;
+  rewriteConfig = ../masa/masa-rewrite.config;
 in
 {
   inherit rewriteConfig;
