@@ -167,6 +167,10 @@
             masaLucee = selfTest.lucee;
             plainLucee = self.packages.${system}.stable;
           }
+          // import ./docker/checks.nix {
+            inherit pkgs;
+            masaImage = selfTest.image;
+          }
           # NixOS tests need a linux guest; the system list also covers darwin.
           // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
             inherit (selfTest) image-health;

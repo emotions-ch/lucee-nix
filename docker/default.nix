@@ -234,7 +234,10 @@ pkgs.dockerTools.streamLayeredImage {
 
   # Consumers (mkLuceeImageTest) need to know which readiness semantics this image
   # has, and asking the image beats making every project restate it.
-  passthru.luceeIsMasa = isMasa;
+  passthru = {
+    luceeIsMasa = isMasa;
+    inherit containerInitScript;
+  };
 
   config = {
     Cmd = [ "${containerInitScript}/bin/container-init.sh" ];
